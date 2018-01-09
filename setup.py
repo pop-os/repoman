@@ -9,12 +9,12 @@ setup(
     description='Easily manage PPAs',
     url='https://github.com/pop_os/repoman',
     license='GNU GPL3',
-    scripts=['org.pop_os.repoman'],
+    scripts=['repoman'],
     packages=['repoman'],
     data_files=[
-        ('share/metainfo', ['data/org.pop_os.repoman.appdata.xml']),
-        ('share/applications', ['data/org.pop_os.repoman.desktop']),
+        ('share/metainfo', ['data/repoman.appdata.xml']),
+        ('share/applications', ['data/repoman.desktop']),
         ('share/repoman', ['data/style.css']),
-        ('lib/repoman', ['org.pop_os.repoman.pkexec']),
+        ('lib/repoman', ['repoman.pkexec']),
     ],
 )

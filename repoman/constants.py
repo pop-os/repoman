@@ -24,7 +24,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
 class App:
-    application_id = "org.pop_os.repoman"
+    application_id = "repoman"
     application_name = "Repoman"
     application_description = "Easily manage PPAs"
     application_version ="1.0"
