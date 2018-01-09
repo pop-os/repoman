@@ -7,13 +7,13 @@ setup(
     version='0.0.6',
     author='Ian Santopietro',
     description='Easily manage PPAs',
-    url='https://github.com/isantop/repoman',
+    url='https://github.com/pop_os/repoman',
     license='GNU GPL3',
-    scripts=['xyz.isantop.repoman'],
+    scripts=['org.pop_os.repoman'],
     packages=['repoman'],
     data_files=[
-        ('share/metainfo', ['data/xyz.isantop.repoman.appdata.xml']),
+        ('share/metainfo', ['data/org.pop_os.repoman.appdata.xml']),
         ('share/repoman', ['data/style.css']),
-        ('lib/repoman', ['xyz.isantop.repoman.pkexec']),
+        ('lib/repoman', ['org.pop_os.repoman.pkexec']),
     ],
 )

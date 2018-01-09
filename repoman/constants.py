@@ -24,13 +24,13 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
 class App:
-    application_id = "xyz.isantop.repoman"
+    application_id = "org.pop_os.repoman"
     application_name = "Repoman"
     application_description = "Easily manage PPAs"
     application_version ="1.0"
-    main_url = "https://github.com/isantop/repoman"
-    bug_url = "https://github.com/isantop/repoman/issues/labels/bug"
-    help_url = "https://github.com/isantop/repoman/issues"
+    main_url = "https://github.com/pop_os/repoman"
+    bug_url = "https://github.com/pop_os/repoman/issues/labels/bug"
+    help_url = "https://github.com/pop_os/repoman/issues"
     about_authors = {"Ian Santopietro <ian@system76.com>"}
     about_comments = application_description
     about_license_type = Gtk.License.GPL_3_0

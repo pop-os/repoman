@@ -1,4 +1,10 @@
-xyz.isantop.repoman (0.0.6) UNRELEASED; urgency=medium
+org.pop_os.repoman (0.0.7) UNRELEASED; urgency=medium
+
+  * Rebrand for Pop_OS
+
+ -- Ian Santopietro <ian@system76.com>  Tue, 09 Jan 2018 15:35:04 -0700
+
+xyz.isantop.repoman (0.0.6) artful; urgency=medium
 
   * Rebrand
 
