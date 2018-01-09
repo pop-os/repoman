@@ -13,6 +13,7 @@ setup(
     packages=['repoman'],
     data_files=[
         ('share/metainfo', ['data/org.pop_os.repoman.appdata.xml']),
+        ('share/applications', ['data/org.pop_os.repoman.desktop']),
         ('share/repoman', ['data/style.css']),
         ('lib/repoman', ['org.pop_os.repoman.pkexec']),
     ],
