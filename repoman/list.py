@@ -20,6 +20,7 @@
 '''
 
 import gi
+import logging
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from softwareproperties.SoftwareProperties import SoftwareProperties
@@ -38,6 +39,13 @@ class List(Gtk.Box):
         self.ppa = PPA(self)
 
         self.settings = Gtk.Settings()
+
+        self.log = logging.getLogger("repoman.List")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
 
         self.content_grid = Gtk.Grid()
         self.content_grid.set_margin_top(24)
@@ -111,13 +119,13 @@ class List(Gtk.Box):
         (model, pathlist) = selec.get_selected_rows()
         tree_iter = model.get_iter(pathlist[0])
         value = model.get_value(tree_iter, 1)
-        print("PPA to edit: %s" % value)
+        self.log.info("PPA to edit: %s" % value)
         self.do_edit(value)
 
     def on_row_activated(self, widget, data1, data2):
         tree_iter = self.ppa_liststore.get_iter(data1)
         value = self.ppa_liststore.get_value(tree_iter, 1)
-        print("PPA to edit: %s" % value)
+        self.log.info("PPA to edit: %s" % value)
         self.do_edit(value)
 
     def do_edit(self, repo):
@@ -139,7 +147,7 @@ class List(Gtk.Box):
                 new_rtype = "deb-src"
             new_disabled = not dialog.enabled_switch.get_active()
             new_uri = dialog.uri_entry.get_text()
-            print(new_disabled)
+            self.log.info(new_disabled)
             new_version = dialog.version_entry.get_text()
             new_component = dialog.component_entry.get_text()
             dialog.destroy()
@@ -172,7 +180,6 @@ class List(Gtk.Box):
     def generate_entries(self, isv_list):
         self.ppa_liststore.clear()
 
-        print(str(self.listiter_count))
         self.listiter_count = self.listiter_count + 1
 
         for source in isv_list:

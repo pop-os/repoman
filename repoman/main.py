@@ -19,6 +19,7 @@
     along with Repoman.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import logging
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
@@ -27,6 +28,14 @@ from .window import Window
 class Application(Gtk.Application):
 
     def do_activate(self):
+
+        self.log = logging.getLogger("repoman.Updates")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
+
         self.win = Window()
         self.win.set_default_size(700, 400)
         self.win.connect("delete-event", Gtk.main_quit)

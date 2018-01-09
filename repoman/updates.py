@@ -19,6 +19,7 @@
     along with Repoman.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import logging
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
@@ -28,6 +29,13 @@ class Updates(Gtk.Box):
 
     def __init__(self, parent):
         Gtk.Box.__init__(self, False, 0)
+
+        self.log = logging.getLogger("repoman.Updates")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
 
         self.parent = parent
 
@@ -111,7 +119,7 @@ class Updates(Gtk.Box):
                 widget.handler_unblock(self.handlers[widget])
 
     def init_updates(self):
-        print("init_distro")
+        self.log.debug("init_distro")
 
         for checkbutton in self.checks_grid.get_children():
             self.checks_grid.remove(checkbutton)
@@ -142,7 +150,7 @@ class Updates(Gtk.Box):
 
     def show_updates(self):
         self.block_handlers()
-        print("show updates")
+        self.log.debug("show updates")
 
         for checkbox in self.checks_grid.get_children():
             (active, inconsistent) = self.ppa.get_child_download_state(checkbox.template)

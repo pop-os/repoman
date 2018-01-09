@@ -20,6 +20,7 @@
 '''
 
 import sys
+import logging
 import gi
 import apt
 import threading, queue, time
@@ -40,8 +41,15 @@ class RemoveThread(threading.Thread):
         self.ppa = ppa
         self.sp = sp
 
+        self.log = logging.getLogger("repoman.PPA.RemoveThread")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
+
     def run(self):
-        print("Removing PPA %s" % (self.ppa))
+        self.log.info( "Removing PPA %s" % (self.ppa) )
         try:
             self.sp.remove_source(self.ppa, remove_source_code=True)
             self.sp.sourceslist.save()
@@ -71,8 +79,15 @@ class AddThread(threading.Thread):
         self.url = url
         self.sp = sp
 
+        self.log = logging.getLogger("repoman.PPA.AddThread")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
+
     def run(self):
-        print("Adding PPA %s" % (self.url))
+        self.log.info("Adding PPA %s" % (self.url))
 
         try:
             self.sp.add_source_from_line(self.url)
@@ -103,6 +118,13 @@ class ModifyThread(threading.Thread):
         self.new_source = new_source
         self.sp = sp
 
+        self.log = logging.getLogger("repoman.PPA.ModifyThread")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
+
     def run(self):
         try:
             index = self.sp.sourceslist.list.index(self.old_source)
@@ -126,39 +148,6 @@ class ModifyThread(threading.Thread):
         GObject.idle_add(self.parent.parent.parent.stack.list_all.throw_error_dialog,
                          message, "error")
 
-class DebugThread(threading.Thread):
-    cache = apt.Cache()
-    exc = None
-
-    def __init__(self, parent, old_source, new_source, sp):
-        threading.Thread.__init__(self)
-        self.parent = parent
-        self.old_source = old_source
-        self.new_source = new_source
-        self.sp = sp
-
-    def run(self):
-        print("Doing a thread for %s" % self.old_source)
-        try:
-            time.sleep(5)
-            tim.sleep(2)
-        except:
-            self.exc = sys.exc_info()
-            GObject.idle_add(self.parent.parent.parent.stack.list_all.throw_error_dialog,
-                             str(self.exc[1]), "error")
-        isv_list = self.sp.get_isv_sources()
-        GObject.idle_add(self.parent.parent.parent.stack.list_all.generate_entries, isv_list)
-        GObject.idle_add(self.parent.parent.parent.stack.list_all.view.set_sensitive, True)
-        GObject.idle_add(self.parent.parent.parent.hbar.spinner.stop)
-
-    def join(self):
-        threading.Thread.join(self)
-        if self.exc:
-            msg = "Thread '%s' threw an exception: %s" % (self.getName(),
-                                                          self.exc[1])
-            new_exc = Exception(msg)
-            raise new_exc.with_traceback(self.exc[2])
-
 # This method need to be improved
 class PPA:
     waiting = "Waiting for PPA"
@@ -170,6 +159,13 @@ class PPA:
 
     def __init__(self, parent):
         self.parent = parent
+
+        self.log = logging.getLogger("repoman.Updates")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
 
     # Returns a list of all 3rd-party software sources.
     def get_isv(self):
@@ -195,7 +191,7 @@ class PPA:
     # Get whether a child repo is enabled or not
     def get_child_download_state(self, child):
         (active, inconsistent) = self.sp.get_comp_child_state(child)
-        print(child.name + " (" + str(active) + ", " + str(inconsistent) + ")")
+        self.log.debug(child.name + " (" + str(active) + ", " + str(inconsistent) + ")")
         return (active, inconsistent)
 
     # Get Source Code State
@@ -250,15 +246,15 @@ class PPA:
 
     # Turn an added deb line into an apt source
     def deb_line_to_source(self, line):
-        print(line)
+        self.log.debug(line)
         source = self.sp._find_source_from_string(line)
         return source
 
     # Modify an existing PPA
     def modify_ppa(self, old_source, disabled, rtype, archs, uri, version, component):
-        print("Old source: %s\n" % old_source)
+        self.log.debug("Old source: %s" % old_source)
         line = self.get_line(disabled, rtype, archs, uri, version, component)
-        print(line)
+        self.log.debug("New source: %s" % line)
         self.parent.parent.parent.hbar.spinner.start()
         self.parent.parent.parent.stack.list_all.view.set_sensitive(False)
         ModifyThread(self.parent, old_source, line, self.sp).start()

@@ -19,6 +19,7 @@
     along with Repoman.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import logging
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
@@ -31,6 +32,13 @@ class ErrorDialog(Gtk.Dialog):
         Gtk.Dialog.__init__(self, dialog_title, parent, 0, "hg",
                             (Gtk.STOCK_CLOSE, Gtk.ResponseType.OK),
                             modal=1)
+
+        self.log = logging.getLogger("repoman.ErrorDialog")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
 
         content_area = self.get_content_area()
 
@@ -69,6 +77,13 @@ class DeleteDialog(Gtk.Dialog):
                             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                              Gtk.STOCK_REMOVE, Gtk.ResponseType.OK),
                              modal=1, use_header_bar=header)
+
+        self.log = logging.getLogger("repoman.DeleteDialog")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
 
         content_area = self.get_content_area()
 
@@ -113,6 +128,13 @@ class AddDialog(Gtk.Dialog):
                             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                              Gtk.STOCK_ADD, Gtk.ResponseType.OK),
                              modal=1, use_header_bar=header)
+
+        self.log = logging.getLogger("repoman.AddDialog")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
 
         self.ppa = PPA(parent)
 
@@ -184,6 +206,13 @@ class EditDialog(Gtk.Dialog):
                             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                              Gtk.STOCK_SAVE, Gtk.ResponseType.OK),
                              modal=1, use_header_bar=header)
+
+        self.log = logging.getLogger("repoman.EditDialog")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
 
         self.ppa = PPA(self)
         self.parent = parent
@@ -284,7 +313,7 @@ class EditDialog(Gtk.Dialog):
             action_area.add(save_button)
 
     def on_remove_button_clicked(self, widget):
-        print("Remove Clicked")
+        self.log.debug("Remove Clicked")
         dialog = DeleteDialog(self)
         response = dialog.run()
 
@@ -295,4 +324,4 @@ class EditDialog(Gtk.Dialog):
         else:
             dialog.destroy()
 
-        
+
