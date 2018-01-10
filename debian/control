@@ -1,4 +1,4 @@
-Source: xyz.isantop.repoman
+Source: repoman
 Section: x11
 Priority: extra
 Maintainer: Ian Santopietro <ian@system76.com>
@@ -10,7 +10,7 @@ Build-Depends: debhelper (>= 10),
 Standards-Version: 3.9.3
 X-Python3-Version: >= 3.4
 
-Package: xyz.isantop.repoman
+Package: repoman
 Architecture: all
 Depends: ${python3:Depends}, ${misc:Depends},
          software-properties-common,

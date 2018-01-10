@@ -20,11 +20,16 @@
 '''
 
 import gi
+import logging
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from softwareproperties.SoftwareProperties import SoftwareProperties
 from .ppa import PPA
 from .dialog import AddDialog, EditDialog
+import gettext
+gettext.bindtextdomain('repoman', '/usr/share/repoman/po')
+gettext.textdomain("repoman")
+_ = gettext.gettext
 
 class List(Gtk.Box):
 
@@ -39,6 +44,13 @@ class List(Gtk.Box):
 
         self.settings = Gtk.Settings()
 
+        self.log = logging.getLogger("repoman.List")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
+
         self.content_grid = Gtk.Grid()
         self.content_grid.set_margin_top(24)
         self.content_grid.set_margin_left(12)
@@ -49,15 +61,12 @@ class List(Gtk.Box):
         self.content_grid.set_vexpand(True)
         self.add(self.content_grid)
 
-        sources_title = Gtk.Label("Extra Sources")
+        sources_title = Gtk.Label(_("Extra Sources"))
         Gtk.StyleContext.add_class(sources_title.get_style_context(), "h2")
         sources_title.set_halign(Gtk.Align.START)
         self.content_grid.attach(sources_title, 0, 0, 1, 1)
 
-        sources_label = Gtk.Label("These sources are for software provided by " +
-                                  "a third party. They may present a security " +
-                                  "risk or can cause system instability. " +
-                                  "Only add sources that you trust.")
+        sources_label = Gtk.Label(_("These sources are for software provided by a third party. They may present a security risk or can cause system instability. Only add sources that you trust."))
         sources_label.set_line_wrap(True)
         sources_label.set_halign(Gtk.Align.START)
         sources_label.set_justify(Gtk.Justification.FILL)
@@ -72,7 +81,7 @@ class List(Gtk.Box):
         self.ppa_liststore = Gtk.ListStore(str, str)
         self.view = Gtk.TreeView(self.ppa_liststore)
         renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn('Source', renderer, markup=0)
+        column = Gtk.TreeViewColumn(_("Source"), renderer, markup=0)
         self.view.append_column(column)
         self.view.set_hexpand(True)
         self.view.set_vexpand(True)
@@ -86,7 +95,7 @@ class List(Gtk.Box):
                                                    Gtk.IconSize.SMALL_TOOLBAR)
         Gtk.StyleContext.add_class(add_button.get_style_context(),
                                    "image-button")
-        add_button.set_tooltip_text("Add New Source")
+        add_button.set_tooltip_text(_("Add New Source"))
         add_button.connect("clicked", self.on_add_button_clicked)
 
         # edit button
@@ -94,7 +103,7 @@ class List(Gtk.Box):
                                                     Gtk.IconSize.SMALL_TOOLBAR)
         Gtk.StyleContext.add_class(edit_button.get_style_context(),
                                    "image-button")
-        edit_button.set_tooltip_text("Modify Selected Source")
+        edit_button.set_tooltip_text(_("Modify Selected Source"))
         edit_button.connect("clicked", self.on_edit_button_clicked)
 
         action_bar = Gtk.ActionBar()
@@ -111,13 +120,13 @@ class List(Gtk.Box):
         (model, pathlist) = selec.get_selected_rows()
         tree_iter = model.get_iter(pathlist[0])
         value = model.get_value(tree_iter, 1)
-        print("PPA to edit: %s" % value)
+        self.log.info("PPA to edit: %s" % value)
         self.do_edit(value)
 
     def on_row_activated(self, widget, data1, data2):
         tree_iter = self.ppa_liststore.get_iter(data1)
         value = self.ppa_liststore.get_value(tree_iter, 1)
-        print("PPA to edit: %s" % value)
+        self.log.info("PPA to edit: %s" % value)
         self.do_edit(value)
 
     def do_edit(self, repo):
@@ -139,7 +148,7 @@ class List(Gtk.Box):
                 new_rtype = "deb-src"
             new_disabled = not dialog.enabled_switch.get_active()
             new_uri = dialog.uri_entry.get_text()
-            print(new_disabled)
+            self.log.info(new_disabled)
             new_version = dialog.version_entry.get_text()
             new_component = dialog.component_entry.get_text()
             dialog.destroy()
@@ -172,7 +181,6 @@ class List(Gtk.Box):
     def generate_entries(self, isv_list):
         self.ppa_liststore.clear()
 
-        print(str(self.listiter_count))
         self.listiter_count = self.listiter_count + 1
 
         for source in isv_list:

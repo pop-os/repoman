@@ -23,6 +23,10 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from .ppa import PPA
+import gettext
+gettext.bindtextdomain('repoman', '/usr/share/repoman/po')
+gettext.textdomain("repoman")
+_ = gettext.gettext
 
 class Settings(Gtk.Box):
 
@@ -38,7 +42,7 @@ class Settings(Gtk.Box):
 
         self.parent = parent
 
-        self.source_check = Gtk.CheckButton(label="Include source code")
+        self.source_check = Gtk.CheckButton(label=_("Include source code"))
         self.proposed_check = Gtk.CheckButton()
 
         settings_grid = Gtk.Grid()
@@ -50,14 +54,12 @@ class Settings(Gtk.Box):
         settings_grid.set_halign(Gtk.Align.CENTER)
         self.add(settings_grid)
 
-        sources_title = Gtk.Label("Official Sources")
+        sources_title = Gtk.Label(_("Official Sources"))
         sources_title.set_halign(Gtk.Align.START)
         Gtk.StyleContext.add_class(sources_title.get_style_context(), "h2")
         settings_grid.attach(sources_title, 0, 0, 1, 1)
 
-        sources_label = Gtk.Label("Official sources are those provided by " +
-                                  "%s and its developers. \nIt's " % self.os_name +
-                                  "recommended to leave these sources enabled.")
+        sources_label = Gtk.Label(_("Official sources are those provided by %s and its developers. It's recommended to leave these sources enabled.") % self.os_name)
         sources_label.set_line_wrap(True)
         sources_label.set_halign(Gtk.Align.START)
         settings_grid.attach(sources_label, 0, 1, 1, 1)
@@ -70,7 +72,7 @@ class Settings(Gtk.Box):
         settings_grid.attach(self.checks_grid, 0, 2, 1, 1)
 
         developer_options = Gtk.Expander()
-        developer_options.set_label("Developer Options (Advanced)")
+        developer_options.set_label(_("Developer Options (Advanced)"))
         settings_grid.attach(developer_options, 0, 3, 1, 1)
 
         self.developer_grid = Gtk.VBox()
@@ -80,8 +82,7 @@ class Settings(Gtk.Box):
         self.developer_grid.set_margin_bottom(12)
         developer_options.add(self.developer_grid)
 
-        developer_label = Gtk.Label("These options are those which are " +
-                                    "primarily of interest to \ndevelopers.")
+        developer_label = Gtk.Label(_("These options are those which are primarily of interest to developers."))
         developer_label.set_line_wrap(True)
         developer_label.set_margin_bottom(12)
         self.developer_grid.add(developer_label)
@@ -115,9 +116,9 @@ class Settings(Gtk.Box):
         for comp in distro_comps:
             description = comp.description
             if description == 'Non-free drivers':
-                description = "Proprietary Drivers for Devices"
+                description = _("Proprietary Drivers for Devices")
             elif description == 'Restricted software':
-                description = "Software with Copyright or Legal Restrictions"
+                description = _("Software with Copyright or Legal Restrictions")
             else:
                 description = description + " software"
 

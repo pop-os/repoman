@@ -1,0 +1,182 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: repoman\n"
+"POT-Creation-Date: 2018-01-10 12:44-0700\n"
+"PO-Revision-Date: 2018-01-10 13:07-0700\n"
+"Last-Translator: Ian Santopietro<ian@system76.com\n"
+"Language-Team: Español <es@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+#: ../repoman/dialog.py:72 ../repoman/dialog.py:253
+msgid "Remove Source"
+msgstr "Eliminar repositorio"
+
+#: ../repoman/dialog.py:92
+msgid "Are you sure you want to remove this source?"
+msgstr "¿Seguro que quieres eliminar este repositorio?"
+
+#: ../repoman/dialog.py:96
+msgid "If you remove this source, you will need to add it again to continue using it. Any software you've installed from this source will remain installed."
+msgstr "Si elimina este repositorio, deberá agregarlo nuevamente para continuar usándolo. Cualquier software que haya instalado desde este repositorio permanecerá instalado."
+
+#: ../repoman/dialog.py:113
+msgid "Add Source"
+msgstr "Agregar repositorio"
+
+#: ../repoman/dialog.py:132
+msgid "Enter Source Line"
+msgstr "Ingrese la línea de deb"
+
+#: ../repoman/dialog.py:136
+msgid "e.g. ppa:mirkobrombin/ppa"
+msgstr "p.e. ppa:mirkobrombin/ppa"
+
+#: ../repoman/dialog.py:140
+msgid "Source Line"
+msgstr "Linea de deb"
+
+#: ../repoman/dialog.py:184
+msgid "Modify Source"
+msgstr "Modificar el repositorio"
+
+#: ../repoman/dialog.py:206
+msgid "Type"
+msgstr "Tipo"
+
+#: ../repoman/dialog.py:208
+msgid "URI"
+msgstr "IUR"
+
+#: ../repoman/dialog.py:210
+msgid "Version"
+msgstr "Versión"
+
+#: ../repoman/dialog.py:212
+msgid "Component"
+msgstr "Componente"
+
+#: ../repoman/dialog.py:214
+msgid "Enabled"
+msgstr "Habilitar"
+
+#: ../repoman/dialog.py:223
+msgid "Binary"
+msgstr "Binario"
+
+#: ../repoman/dialog.py:224
+msgid "Source code"
+msgstr "Código fuente"
+
+#: ../repoman/list.py:56 ../repoman/stack.py:49
+msgid "Extra Sources"
+msgstr "Repositorios adicionales"
+
+#: ../repoman/list.py:61
+msgid "These sources are for software provided by a third party. They may present a security risk or can cause system instability. Only add sources that you trust."
+msgstr "Estos repositorios son para software proporcionado por un tercero. Pueden presentar un riesgo de seguridad o pueden causar inestabilidad del sistema. Solo agrega repositorios en los que confíes."
+
+#: ../repoman/list.py:76
+msgid "Source"
+msgstr "Repositorio"
+
+#: ../repoman/list.py:90
+msgid "Add New Source"
+msgstr "Agregar repositorio nuevo"
+
+#: ../repoman/list.py:98
+msgid "Modify Selected Source"
+msgstr "Modificar el repositorio seleccionado"
+
+#: ../repoman/settings.py:45
+msgid "Include source code"
+msgstr "Incluir código fuente"
+
+#: ../repoman/settings.py:57
+msgid "Official Sources"
+msgstr "Repositorios oficiales"
+
+# %s = Operating System Name
+#: ../repoman/settings.py:62
+msgid ""
+"Official sources are those provided by %s and its developers. \n"
+"It's recommended to leave these sources enabled."
+msgstr ""
+"Las repositorios oficiales son las proporcionadas por \n"
+"%s y sus desarrolladores. Se recomienda dejar estas \n"
+"repositorios habilitadas."
+
+#: ../repoman/settings.py:75
+msgid "Developer Options (Advanced)"
+msgstr "Opciones de desarrollador (avanzado)"
+
+#: ../repoman/settings.py:85
+msgid ""
+"These options are those which are primarily of interest \n"
+"to developers."
+msgstr ""
+"Estas opciones son aquellas que son principalmente \n"
+"de interés para los desarrolladores."
+
+#: ../repoman/settings.py:119
+msgid "Proprietary Drivers for Devices"
+msgstr "Software propietario para dispositivos"
+
+#: ../repoman/settings.py:121
+msgid "Software with Copyright or Legal Restrictions"
+msgstr "Software con copyright o restricciones legales"
+
+#: ../repoman/stack.py:47
+msgid "Settings"
+msgstr "Configuraciones"
+
+#: ../repoman/stack.py:48
+msgid "Updates"
+msgstr "Actualizaciones"
+
+#: ../repoman/updates.py:51
+msgid "Update Sources"
+msgstr "Fuentes para actualizaciones"
+
+# %s = Operating System Name
+#: ../repoman/updates.py:56
+msgid ""
+"These sources control how %s checks for updates. \n"
+"It is recommended to leave these sources enabled."
+msgstr ""
+"Estas fuentes controlan cómo %s busca \n"
+"actualizaciones. Se recomienda dejar estas \n"
+"fuentes habilitadas."
+
+#: ../repoman/updates.py:72
+msgid "Update Notifications"
+msgstr "Notificaciones de actualizaciones"
+
+# %s = Operating System Name
+#: ../repoman/updates.py:77
+msgid "Change how %s notifies you about pending software updates."
+msgstr "Cambie cómo %s le notifica sobre las actualizaciones pendientes"
+
+#: ../repoman/updates.py:90
+msgid "Notify about new updates"
+msgstr "Notificarme sobre nuevas actualizaciones"
+
+#: ../repoman/updates.py:94
+msgid "Automatically install important security updates."
+msgstr "Instalar automáticamente importantes actualizaciones de seguridad"
+
+# %s = Operating System Name
+#: ../repoman/updates.py:97
+msgid "Notify about new versions of %s"
+msgstr "Notificar sobre nuevas versiones de %s"
+
+#: ../repoman/updates.py:129
+msgid "Backported Updates"
+msgstr "Actualizaciones de la futura"
+

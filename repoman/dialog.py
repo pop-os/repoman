@@ -19,10 +19,15 @@
     along with Repoman.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import logging
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from .ppa import PPA
+import gettext
+gettext.bindtextdomain('repoman', '/usr/share/repoman/po')
+gettext.textdomain("repoman")
+_ = gettext.gettext
 
 class ErrorDialog(Gtk.Dialog):
 
@@ -31,6 +36,13 @@ class ErrorDialog(Gtk.Dialog):
         Gtk.Dialog.__init__(self, dialog_title, parent, 0, "hg",
                             (Gtk.STOCK_CLOSE, Gtk.ResponseType.OK),
                             modal=1)
+
+        self.log = logging.getLogger("repoman.ErrorDialog")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
 
         content_area = self.get_content_area()
 
@@ -65,10 +77,17 @@ class DeleteDialog(Gtk.Dialog):
 
         header = settings.props.gtk_dialogs_use_header
 
-        Gtk.Dialog.__init__(self, "Remove Source", parent, 0,
+        Gtk.Dialog.__init__(self, _("Remove Source"), parent, 0,
                             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                              Gtk.STOCK_REMOVE, Gtk.ResponseType.OK),
                              modal=1, use_header_bar=header)
+
+        self.log = logging.getLogger("repoman.DeleteDialog")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
 
         content_area = self.get_content_area()
 
@@ -85,14 +104,11 @@ class DeleteDialog(Gtk.Dialog):
                                                 Gtk.IconSize.DIALOG)
         content_grid.attach(delete_image, 0, 0, 1, 2)
 
-        delete_label = Gtk.Label("Are you sure you want to remove this source?")
+        delete_label = Gtk.Label(_("Are you sure you want to remove this source?"))
         Gtk.StyleContext.add_class(delete_label.get_style_context(), "h2")
         content_grid.attach(delete_label, 1, 0, 1, 1)
 
-        delete_explain = Gtk.Label("If you remove this source, you will need " +
-                                   "to add it again to continue using it.\n" +
-                                   "Any software you've installed from this " +
-                                   "source will remain installed.")
+        delete_explain = Gtk.Label(_("If you remove this source, you will need to add it again to continue using it. Any software you've installed from this source will remain installed."))
         content_grid.attach(delete_explain, 1, 1, 1, 1)
 
         Gtk.StyleContext.add_class(self.get_widget_for_response(Gtk.ResponseType.OK).get_style_context(),
@@ -109,10 +125,17 @@ class AddDialog(Gtk.Dialog):
         settings = Gtk.Settings.get_default()
         header = settings.props.gtk_dialogs_use_header
 
-        Gtk.Dialog.__init__(self, "Add Source", parent, 0,
+        Gtk.Dialog.__init__(self, _("Add Source"), parent, 0,
                             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                              Gtk.STOCK_ADD, Gtk.ResponseType.OK),
                              modal=1, use_header_bar=header)
+
+        self.log = logging.getLogger("repoman.AddDialog")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
 
         self.ppa = PPA(parent)
 
@@ -128,17 +151,17 @@ class AddDialog(Gtk.Dialog):
         content_grid.set_hexpand(True)
         content_area.add(content_grid)
 
-        add_title = Gtk.Label("Enter Source Line")
+        add_title = Gtk.Label(_("Enter Source Line"))
         Gtk.StyleContext.add_class(add_title.get_style_context(), "h2")
         content_grid.attach(add_title, 0, 0, 1, 1)
 
-        add_label = Gtk.Label("e.g. ppa:mirkobrombin/ppa")
+        add_label = Gtk.Label(_("e.g. ppa:mirkobrombin/ppa"))
         content_grid.attach(add_label, 0, 1, 1, 1)
 
         self.ppa_entry = Gtk.Entry()
-        self.ppa_entry.set_placeholder_text("Source Line")
+        self.ppa_entry.set_placeholder_text(_("Source Line"))
         self.ppa_entry.set_activates_default(True)
-        self.ppa_entry.connect("changed", self.on_entry_changed)
+        self.ppa_entry.connect(_("changed"), self.on_entry_changed)
         self.ppa_entry.set_width_chars(50)
         self.ppa_entry.set_margin_top(12)
         content_grid.attach(self.ppa_entry, 0, 2, 1, 1)
@@ -180,10 +203,17 @@ class EditDialog(Gtk.Dialog):
         settings = Gtk.Settings.get_default()
         header = settings.props.gtk_dialogs_use_header
 
-        Gtk.Dialog.__init__(self, "Modify Source", parent, 0,
+        Gtk.Dialog.__init__(self, _("Modify Source"), parent, 0,
                             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                              Gtk.STOCK_SAVE, Gtk.ResponseType.OK),
                              modal=1, use_header_bar=header)
+
+        self.log = logging.getLogger("repoman.EditDialog")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
 
         self.ppa = PPA(self)
         self.parent = parent
@@ -202,15 +232,15 @@ class EditDialog(Gtk.Dialog):
         content_grid.set_halign(Gtk.Align.CENTER)
         content_area.add(content_grid)
 
-        type_label = Gtk.Label("Type")
+        type_label = Gtk.Label(_("Type"))
         type_label.set_halign(Gtk.Align.END)
-        uri_label = Gtk.Label("URI")
+        uri_label = Gtk.Label(_("URI"))
         uri_label.set_halign(Gtk.Align.END)
-        version_label = Gtk.Label("Version")
+        version_label = Gtk.Label(_("Version"))
         version_label.set_halign(Gtk.Align.END)
-        component_label = Gtk.Label("Component")
+        component_label = Gtk.Label(_("Component"))
         component_label.set_halign(Gtk.Align.END)
-        enabled_label = Gtk.Label("Enabled")
+        enabled_label = Gtk.Label(_("Enabled"))
         enabled_label.set_halign(Gtk.Align.END)
         content_grid.attach(type_label, 0, 0, 1, 1)
         content_grid.attach(uri_label, 0, 1, 1, 1)
@@ -219,8 +249,8 @@ class EditDialog(Gtk.Dialog):
         content_grid.attach(enabled_label, 0, 4, 1, 1)
 
         self.type_box = Gtk.ComboBoxText()
-        self.type_box.append("deb", "Binary")
-        self.type_box.append("deb-src", "Source code")
+        self.type_box.append("deb", _("Binary"))
+        self.type_box.append("deb-src", _("Source code"))
         self.type_box.set_active_id(repo_type)
         content_grid.attach(self.type_box, 1, 0, 1, 1)
 
@@ -249,7 +279,7 @@ class EditDialog(Gtk.Dialog):
         content_grid.attach(self.enabled_switch, 1, 4, 1, 1)
 
 
-        remove_button = Gtk.Button.new_with_label("Remove Source")
+        remove_button = Gtk.Button.new_with_label(_("Remove Source"))
         Gtk.StyleContext.add_class(remove_button.get_style_context(),
                                    "destructive-action")
         remove_button.connect("clicked", self.on_remove_button_clicked)
@@ -284,7 +314,7 @@ class EditDialog(Gtk.Dialog):
             action_area.add(save_button)
 
     def on_remove_button_clicked(self, widget):
-        print("Remove Clicked")
+        self.log.debug("Remove Clicked")
         dialog = DeleteDialog(self)
         response = dialog.run()
 
@@ -295,4 +325,4 @@ class EditDialog(Gtk.Dialog):
         else:
             dialog.destroy()
 
-        
+

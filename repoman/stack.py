@@ -25,6 +25,10 @@ from gi.repository import Gtk
 from .settings import Settings
 from .updates import Updates
 from .list import List
+import gettext
+gettext.bindtextdomain('repoman', '/usr/share/repoman/po')
+gettext.textdomain("repoman")
+_ = gettext.gettext
 
 class Stack(Gtk.Box):
 
@@ -40,9 +44,9 @@ class Stack(Gtk.Box):
         self.updates = Updates(self)
         self.list_all = List(self)
 
-        self.stack.add_titled(self.setting, "settings", "Settings")
-        self.stack.add_titled(self.updates, "updates", "Updates")
-        self.stack.add_titled(self.list_all, "list", "Extra Sources")
+        self.stack.add_titled(self.setting, "settings", _("Settings"))
+        self.stack.add_titled(self.updates, "updates", _("Updates"))
+        self.stack.add_titled(self.list_all, "list", _("Extra Sources"))
 
         self.pack_start(self.stack, True, True, 0)
 

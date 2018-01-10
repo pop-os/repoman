@@ -5,7 +5,7 @@
 
 <policyconfig>
 
-  <action id="org.freedesktop.policykit.pkexec.run-xyz.isantop.repoman">
+  <action id="org.freedesktop.policykit.pkexec.run-repoman">
     <description>Run Repoman</description>
     <message>Authentication is required to manage system software sources</message>
     <defaults>
@@ -13,7 +13,7 @@
       <allow_inactive>no</allow_inactive>
       <allow_active>auth_admin_keep</allow_active>
     </defaults>
-    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/xyz.isantop.repoman</annotate>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/bin/repoman</annotate>
     <annotate key="org.freedesktop.policykit.exec.allow_gui">TRUE</annotate>
   </action>
 
