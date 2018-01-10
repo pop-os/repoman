@@ -15,6 +15,6 @@ setup(
         ('share/metainfo', ['data/repoman.appdata.xml']),
         ('share/applications', ['data/repoman.desktop']),
         ('share/repoman', ['data/style.css']),
-        ('lib/repoman', ['repoman.pkexec']),
+        ('lib/repoman', ['pkexec']),
     ],
 )
