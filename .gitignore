@@ -1,8 +1,9 @@
 build
-.pybuild 
+.pybuild
 *.pyc
 debian/.debhelper/
 debian/files
 debian/xyz.isantop.repoman*
+debian/org.pop_os.repoman*
 debian/com.github*
 *~

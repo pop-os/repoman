@@ -4,16 +4,17 @@ from distutils.core import setup
 
 setup(
     name='Repoman',
-    version='0.0.6',
+    version='0.0.7',
     author='Ian Santopietro',
     description='Easily manage PPAs',
-    url='https://github.com/isantop/repoman',
+    url='https://github.com/pop_os/repoman',
     license='GNU GPL3',
-    scripts=['xyz.isantop.repoman'],
+    scripts=['org.pop.repoman'],
     packages=['repoman'],
     data_files=[
-        ('share/metainfo', ['data/xyz.isantop.repoman.appdata.xml']),
+        ('share/metainfo', ['data/repoman.appdata.xml']),
+        ('share/applications', ['data/repoman.desktop']),
         ('share/repoman', ['data/style.css']),
-        ('lib/repoman', ['xyz.isantop.repoman.pkexec']),
+        ('lib/repoman', ['pkexec']),
     ],
 )
