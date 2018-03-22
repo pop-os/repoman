@@ -12,7 +12,6 @@ Repoman is based on [PPAExtender](https://github.com/mirkobrombin/PPAExtender)
 ## Requirements
 - python3
 - libgtk-3-dev
-- libgranite-dev
 - software-properties-common
 
 ## Installation
@@ -27,7 +26,7 @@ sudo apt install repoman
 Additionally, you can use **git**:
 
 ```bash
-git clone https://github.com/isantop/repoman.git
+git clone https://github.com/pop-os/repoman.git
 cd repoman
 sudo python3 setup.py install
 ```
