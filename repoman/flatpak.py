@@ -100,9 +100,63 @@ class AddDialog(Gtk.Dialog):
         except TypeError:
             pass
 
+class DeleteDialog(Gtk.Dialog):
+
+    ppa_name = False
+
+    def __init__(self, parent, remote_name):
+
+        settings = Gtk.Settings.get_default()
+
+        header = settings.props.gtk_dialogs_use_header
+
+        Gtk.Dialog.__init__(self, _(f"Remove {remote_name}"), parent, 0,
+                            (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                             Gtk.STOCK_REMOVE, Gtk.ResponseType.OK),
+                             modal=1, use_header_bar=header)
+
+        self.log = logging.getLogger("repoman.FPDeleteDialog")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
+
+        content_area = self.get_content_area()
+
+        content_grid = Gtk.Grid()
+        content_grid.set_margin_top(24)
+        content_grid.set_margin_left(24)
+        content_grid.set_margin_right(24)
+        content_grid.set_margin_bottom(24)
+        content_grid.set_column_spacing(12)
+        content_grid.set_row_spacing(6)
+        content_area.add(content_grid)
+
+        delete_image = Gtk.Image.new_from_icon_name("dialog-warning-symbolic",
+                                                Gtk.IconSize.DIALOG)
+        delete_image.props.valign = Gtk.Align.START
+        content_grid.attach(delete_image, 0, 0, 1, 2)
+
+        delete_label = Gtk.Label(_("Are you sure you want to remove this source?"))
+        Gtk.StyleContext.add_class(delete_label.get_style_context(), "h2")
+        content_grid.attach(delete_label, 1, 0, 1, 1)
+
+        delete_explain = Gtk.Label(_("If you remove this source, you will need to add it again to continue using it. Any software you've installed from this source will be removed."))
+        delete_explain.props.wrap = True
+        delete_explain.set_max_width_chars(50)
+        delete_explain.set_xalign(0)
+        content_grid.attach(delete_explain, 1, 1, 1, 1)
+
+        Gtk.StyleContext.add_class(self.get_widget_for_response(Gtk.ResponseType.OK).get_style_context(),
+                                   "destructive-action")
+
+        self.show_all()
+
 class Flatpak(Gtk.Box):
 
     listiter_count = 0
+    remote_name = False
 
     def __init__(self, parent):
         Gtk.Box.__init__(self, False, 0)
@@ -192,16 +246,40 @@ class Flatpak(Gtk.Box):
         self.generate_entries()
 
     def on_delete_button_clicked(self, widget):
-        pass
+        remote = self.get_selected_remote(0)
+        name = self.get_selected_remote(1)
+        self.log.info('Deleting remote %s', remote)
+
+        dialog = DeleteDialog(self.parent.parent, name)
+        response = dialog.run()
+        
+        if response == Gtk.ResponseType.OK:
+            flatpak.remotes.delete_remote(remote)
+        
+        dialog.destroy()
+        self.generate_entries()
+    
+    def get_selected_remote(self, index):
+        selection = self.view.get_selection()
+        (model, pathlist) = selection.get_selected_rows()
+        tree_iter = model.get_iter(pathlist[0])
+        value = model.get_value(tree_iter, index)
+        self.log.debug('Current selection: %s', value)
+        return value
 
     def on_row_activated(self, widget, data1, data2):
-        tree_iter = self.remote_liststore.get_iter(data1)
-        value = self.remote_liststore.get_value(tree_iter, 1)
-        self.log.info("PPA to edit: %s" % value)
+        remote = self.get_selected_remote(0)
+        name = self.get_selected_remote(1)
+        self.log.info('Deleting remote %s', remote)
 
-    def do_edit(self, repo):
-        pass
+        dialog = DeleteDialog(self.parent.parent, name)
+        response = dialog.run()
         
+        if response == Gtk.ResponseType.OK:
+            flatpak.remotes.delete_remote(remote)
+        
+        dialog.destroy()
+        self.generate_entries()
 
     def on_add_button_clicked(self, widget):
         dialog = AddDialog(self.parent.parent)
@@ -239,11 +317,12 @@ class Flatpak(Gtk.Box):
                 ]
             )
 
-
     def on_row_change(self, widget):
         (model, pathlist) = widget.get_selected_rows()
         for path in pathlist :
-            print(pathlist) #DEBUG
+            tree_iter = model.get_iter(path)
+            value = model.get_value(tree_iter,1)
+            self.remote_name = value
 
     def throw_error_dialog(self, message, msg_type):
         if msg_type == "error":
