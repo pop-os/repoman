@@ -25,6 +25,10 @@ from gi.repository import Gtk
 from .settings import Settings
 from .updates import Updates
 from .list import List
+try:
+    from .flatpak import Flatpak
+except ImportError:
+    Flatpak = False
 import gettext
 gettext.bindtextdomain('repoman', '/usr/share/repoman/po')
 gettext.textdomain("repoman")
@@ -43,10 +47,14 @@ class Stack(Gtk.Box):
         self.setting = Settings(self)
         self.updates = Updates(self)
         self.list_all = List(self)
+        if Flatpak:
+            self.flatpak = Flatpak(self)
 
         self.stack.add_titled(self.setting, "settings", _("Settings"))
         self.stack.add_titled(self.updates, "updates", _("Updates"))
         self.stack.add_titled(self.list_all, "list", _("Extra Sources"))
+        if Flatpak:
+            self.stack.add_titled(self.flatpak, "flatpak", _("Flatpak"))
 
         self.pack_start(self.stack, True, True, 0)
 
