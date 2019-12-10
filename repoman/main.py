@@ -24,6 +24,12 @@ import logging
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
+
+try:
+    from systemd.journal import JournalHandler
+except ImportError:
+    JournalHandler = False
+
 from .window import Window
 
 bus = dbus.SystemBus()
@@ -37,8 +43,14 @@ class Application(Gtk.Application):
         handler = logging.StreamHandler()
         formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
+        handler.setLevel(logging.WARNING)
         self.log.addHandler(handler)
-        self.log.setLevel(logging.WARNING)
+
+        if JournalHandler:
+            journald_log = JournalHandler()
+            journald_log.setLevel(logging.INFO)
+            journald_log.setFormatter(formatter)
+            self.log.addHandler(journald_log)
 
         self.win = Window()
         self.win.set_default_size(700, 400)

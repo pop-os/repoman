@@ -49,7 +49,7 @@ class RemoveThread(threading.Thread):
         formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         self.log.addHandler(handler)
-        self.log.setLevel(logging.WARNING)
+
 
     def run(self):
         self.log.info( "Removing PPA %s" % (self.ppa) )
@@ -86,7 +86,7 @@ class AddThread(threading.Thread):
         formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         self.log.addHandler(handler)
-        self.log.setLevel(logging.WARNING)
+
 
     def run(self):
         self.log.info("Adding PPA %s" % (self.url))
@@ -125,7 +125,7 @@ class ModifyThread(threading.Thread):
         formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         self.log.addHandler(handler)
-        self.log.setLevel(logging.WARNING)
+
 
     def run(self):
         try:
@@ -163,7 +163,7 @@ class PPA:
         formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         self.log.addHandler(handler)
-        self.log.setLevel(logging.WARNING)
+
 
     # Returns a list of all 3rd-party software sources.
     def get_isv(self):

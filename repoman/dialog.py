@@ -42,7 +42,7 @@ class ErrorDialog(Gtk.Dialog):
         formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         self.log.addHandler(handler)
-        self.log.setLevel(logging.WARNING)
+
 
         content_area = self.get_content_area()
 
@@ -87,7 +87,7 @@ class DeleteDialog(Gtk.Dialog):
         formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         self.log.addHandler(handler)
-        self.log.setLevel(logging.WARNING)
+
 
         content_area = self.get_content_area()
 
@@ -139,7 +139,7 @@ class AddDialog(Gtk.Dialog):
         formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         self.log.addHandler(handler)
-        self.log.setLevel(logging.WARNING)
+
 
         self.ppa = PPA(parent)
 
@@ -217,7 +217,7 @@ class EditDialog(Gtk.Dialog):
         formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         self.log.addHandler(handler)
-        self.log.setLevel(logging.WARNING)
+
 
         self.ppa = PPA(self)
         self.parent = parent

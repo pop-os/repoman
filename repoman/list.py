@@ -49,7 +49,7 @@ class List(Gtk.Box):
         formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         self.log.addHandler(handler)
-        self.log.setLevel(logging.WARNING)
+
 
         self.content_grid = Gtk.Grid()
         self.content_grid.set_margin_left(12)

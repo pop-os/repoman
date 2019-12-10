@@ -50,7 +50,7 @@ class AddDialog(Gtk.Dialog):
         formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         self.log.addHandler(handler)
-        self.log.setLevel(logging.WARNING)
+
 
         content_area = self.get_content_area()
 
@@ -120,7 +120,7 @@ class DeleteDialog(Gtk.Dialog):
         formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         self.log.addHandler(handler)
-        self.log.setLevel(logging.WARNING)
+
 
         content_area = self.get_content_area()
 
@@ -168,7 +168,7 @@ class Flatpak(Gtk.Box):
         formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         self.log.addHandler(handler)
-        self.log.setLevel(logging.DEBUG)
+
 
         self.content_grid = Gtk.Grid()
         self.content_grid.set_margin_left(12)
