@@ -24,23 +24,89 @@ import logging
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
-import pyflatpak
+import pyflatpak as flatpak
 
-from .dialog import AddDialog, EditDialog
 import gettext
 gettext.bindtextdomain('repoman', '/usr/share/repoman/po')
 gettext.textdomain("repoman")
 _ = gettext.gettext
 
+class AddDialog(Gtk.Dialog):
+
+    remote_name = False
+
+    def __init__(self, parent):
+
+        settings = Gtk.Settings.get_default()
+        header = settings.props.gtk_dialogs_use_header
+
+        Gtk.Dialog.__init__(self, _("Add Source"), parent, 0,
+                            (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                             Gtk.STOCK_ADD, Gtk.ResponseType.OK),
+                             modal=1, use_header_bar=header)
+
+        self.log = logging.getLogger("repoman.FPAddDialog")
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        handler.setFormatter(formatter)
+        self.log.addHandler(handler)
+        self.log.setLevel(logging.WARNING)
+
+        content_area = self.get_content_area()
+
+        content_grid = Gtk.Grid()
+        content_grid.set_margin_top(24)
+        content_grid.set_margin_left(12)
+        content_grid.set_margin_right(12)
+        content_grid.set_margin_bottom(12)
+        content_grid.set_row_spacing(6)
+        content_grid.set_halign(Gtk.Align.CENTER)
+        content_grid.set_hexpand(True)
+        content_area.add(content_grid)
+
+        add_title = Gtk.Label(_("Enter Source Details"))
+        Gtk.StyleContext.add_class(add_title.get_style_context(), "h2")
+        content_grid.attach(add_title, 0, 0, 1, 1)
+
+        self.name_entry = Gtk.Entry()
+        self.name_entry.set_placeholder_text(_("Source Name"))
+        self.name_entry.set_activates_default(True)
+        self.name_entry.set_width_chars(20)
+        self.name_entry.set_margin_top(12)
+        content_grid.attach(self.name_entry, 0, 2, 1, 1)
+
+        self.url_entry = Gtk.Entry()
+        self.url_entry.set_placeholder_text(_("URL"))
+        self.url_entry.set_activates_default(True)
+        self.url_entry.connect(_("changed"), self.on_entry_changed)
+        self.url_entry.set_width_chars(50)
+        self.url_entry.set_margin_top(12)
+        content_grid.attach(self.url_entry, 0, 2, 1, 1)
+
+        self.add_button = self.get_widget_for_response(Gtk.ResponseType.OK)
+        self.add_button.set_sensitive(False)
+
+        Gtk.StyleContext.add_class(self.add_button.get_style_context(),
+                                   "suggested-action")
+        self.add_button.grab_default()
+
+        self.show_all()
+
+    def on_entry_changed(self, widget):
+        entry_text = widget.get_text()
+        entry_valid = flatpak.validate(entry_text)
+        try:
+            self.add_button.set_sensitive(entry_valid)
+        except TypeError:
+            pass
+
 class Flatpak(Gtk.Box):
 
     listiter_count = 0
-    ppa_name = False
 
     def __init__(self, parent):
         Gtk.Box.__init__(self, False, 0)
         self.parent = parent
-
         self.settings = Gtk.Settings()
 
         self.log = logging.getLogger("repoman.Flatpak")
@@ -77,11 +143,21 @@ class Flatpak(Gtk.Box):
         Gtk.StyleContext.add_class(list_window.get_style_context(), "list_window")
         list_grid.attach(list_window, 0, 0, 1, 1)
 
-        self.ppa_liststore = Gtk.ListStore(str, str)
-        self.view = Gtk.TreeView(self.ppa_liststore)
-        renderer = Gtk.CellRendererText()
-        column = Gtk.TreeViewColumn(_("Source"), renderer, markup=0)
-        self.view.append_column(column)
+        self.remote_liststore = Gtk.ListStore(str, str, str, str)
+        self.view = Gtk.TreeView(self.remote_liststore)
+        
+        name_renderer = Gtk.CellRendererText()
+        url_renderer = Gtk.CellRendererText()
+        option_renderer = Gtk.CellRendererText()
+
+        name_column = Gtk.TreeViewColumn(_('Source'), name_renderer, markup=1)
+        url_column = Gtk.TreeViewColumn(_('URL'), url_renderer, markup=2)
+        option_column = Gtk.TreeViewColumn(_('Option'), option_renderer, markup=3)
+        
+        self.view.append_column(name_column)
+        self.view.append_column(url_column)
+        self.view.append_column(option_column)
+
         self.view.set_hexpand(True)
         self.view.set_vexpand(True)
         self.view.connect("row-activated", self.on_row_activated)
@@ -119,8 +195,8 @@ class Flatpak(Gtk.Box):
         pass
 
     def on_row_activated(self, widget, data1, data2):
-        tree_iter = self.ppa_liststore.get_iter(data1)
-        value = self.ppa_liststore.get_value(tree_iter, 1)
+        tree_iter = self.remote_liststore.get_iter(data1)
+        value = self.remote_liststore.get_value(tree_iter, 1)
         self.log.info("PPA to edit: %s" % value)
 
     def do_edit(self, repo):
@@ -128,10 +204,35 @@ class Flatpak(Gtk.Box):
         
 
     def on_add_button_clicked(self, widget):
-        pass
+        dialog = AddDialog(self.parent.parent)
+        response = dialog.run()
+
+        if response is Gtk.ResponseType.OK:
+            name = dialog.name_entry.get_text()
+            url = dialog.url_entry.get_text()
+            dialog.destroy()
+            flatpak.remotes.add_remote(name, url)
 
     def generate_entries(self):
-        pass
+        self.remote_liststore.clear()
+
+        # remote_liststore = []
+        remotes = {}
+        for option in flatpak.remotes.remotes:
+            for remote in flatpak.remotes.remotes[option]:
+                remotes[remote] = flatpak.remotes.remotes[option][remote]
+        
+        for remote in remotes:
+            # remote_liststore.append(
+            self.remote_liststore.append(
+                [
+                    remotes[remote]["name"],
+                    remotes[remote]["title"],
+                    remotes[remote]["url"],
+                    remotes[remote]["option"]
+                ]
+            )
+
 
     def on_row_change(self, widget):
         (model, pathlist) = widget.get_selected_rows()
