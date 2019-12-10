@@ -18,8 +18,31 @@
     You should have received a copy of the GNU General Public License
     along with Repoman.  If not, see <http://www.gnu.org/licenses/>.
 '''
+import logging
 import os
 import sys
+
+try:
+    from systemd.journal import JournalHandler
+except ImportError:
+    JournalHandler = False
+
+log = logging.getLogger("repoman")
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+handler.setFormatter(formatter)
+handler.setLevel(logging.WARNING)
+log.addHandler(handler)
+log.setLevel(logging.DEBUG)
+
+if JournalHandler:
+    journald_log = JournalHandler()
+    journald_log.setLevel(logging.INFO)
+    journald_log.setFormatter(formatter)
+    log.addHandler(journald_log)
+
+log.debug('Logging established')
+
 from repoman import main
 
     

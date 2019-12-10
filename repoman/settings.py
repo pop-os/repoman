@@ -21,6 +21,7 @@
 
 import dbus
 import gi
+import logging
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from .ppa import PPA
@@ -35,6 +36,8 @@ class Settings(Gtk.Box):
         Gtk.Box.__init__(self, False, 0)
 
         self.ppa = PPA(self)
+        self.log = logging.getLogger('repoman.Settings')
+        self.log.debug('Logging established.')
         self.os_name = self.ppa.get_os_name()
         self.handlers = {}
 

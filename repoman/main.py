@@ -39,19 +39,6 @@ class Application(Gtk.Application):
 
     def do_activate(self):
 
-        self.log = logging.getLogger("repoman.Updates")
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-        handler.setFormatter(formatter)
-        handler.setLevel(logging.WARNING)
-        self.log.addHandler(handler)
-
-        if JournalHandler:
-            journald_log = JournalHandler()
-            journald_log.setLevel(logging.INFO)
-            journald_log.setFormatter(formatter)
-            self.log.addHandler(journald_log)
-
         self.win = Window()
         self.win.set_default_size(700, 400)
         self.win.connect("delete-event", self.application_quit)

@@ -158,7 +158,7 @@ class PPA:
     def __init__(self, parent):
         self.parent = parent
 
-        self.log = logging.getLogger("repoman.Updates")
+        self.log = logging.getLogger("repoman.PPA")
         handler = logging.StreamHandler()
         formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
