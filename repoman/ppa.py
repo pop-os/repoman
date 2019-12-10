@@ -45,10 +45,7 @@ class RemoveThread(threading.Thread):
         self.sp = sp
 
         self.log = logging.getLogger("repoman.PPA.RemoveThread")
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-        handler.setFormatter(formatter)
-        self.log.addHandler(handler)
+        self.log.debug('Logging established')
 
 
     def run(self):
@@ -82,10 +79,7 @@ class AddThread(threading.Thread):
         self.sp = sp
 
         self.log = logging.getLogger("repoman.PPA.AddThread")
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-        handler.setFormatter(formatter)
-        self.log.addHandler(handler)
+        self.log.debug('Logging established')
 
 
     def run(self):
@@ -121,10 +115,7 @@ class ModifyThread(threading.Thread):
         self.sp = sp
 
         self.log = logging.getLogger("repoman.PPA.ModifyThread")
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-        handler.setFormatter(formatter)
-        self.log.addHandler(handler)
+        self.log.debug('Logging established')
 
 
     def run(self):
@@ -159,10 +150,7 @@ class PPA:
         self.parent = parent
 
         self.log = logging.getLogger("repoman.PPA")
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-        handler.setFormatter(formatter)
-        self.log.addHandler(handler)
+        self.log.debug('Logging established')
 
 
     # Returns a list of all 3rd-party software sources.

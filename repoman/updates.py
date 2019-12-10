@@ -36,10 +36,7 @@ class Updates(Gtk.Box):
         Gtk.Box.__init__(self, False, 0)
 
         self.log = logging.getLogger("repoman.Updates")
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-        handler.setFormatter(formatter)
-        self.log.addHandler(handler)
+        self.log.debug('Logging established')
 
 
         self.parent = parent

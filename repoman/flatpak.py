@@ -164,10 +164,7 @@ class Flatpak(Gtk.Box):
         self.settings = Gtk.Settings()
 
         self.log = logging.getLogger("repoman.Flatpak")
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-        handler.setFormatter(formatter)
-        self.log.addHandler(handler)
+        self.log.debug('Logging established')
 
 
         self.content_grid = Gtk.Grid()
