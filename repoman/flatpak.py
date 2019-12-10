@@ -73,7 +73,7 @@ class AddDialog(Gtk.Dialog):
         self.name_entry.set_activates_default(True)
         self.name_entry.set_width_chars(20)
         self.name_entry.set_margin_top(12)
-        content_grid.attach(self.name_entry, 0, 2, 1, 1)
+        content_grid.attach(self.name_entry, 0, 1, 1, 1)
 
         self.url_entry = Gtk.Entry()
         self.url_entry.set_placeholder_text(_("URL"))
@@ -81,7 +81,7 @@ class AddDialog(Gtk.Dialog):
         self.url_entry.connect(_("changed"), self.on_entry_changed)
         self.url_entry.set_width_chars(50)
         self.url_entry.set_margin_top(12)
-        content_grid.attach(self.url_entry, 0, 2, 1, 1)
+        content_grid.attach(self.url_entry, 1, 1, 1, 1)
 
         self.add_button = self.get_widget_for_response(Gtk.ResponseType.OK)
         self.add_button.set_sensitive(False)
@@ -114,7 +114,7 @@ class Flatpak(Gtk.Box):
         formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         handler.setFormatter(formatter)
         self.log.addHandler(handler)
-        self.log.setLevel(logging.WARNING)
+        self.log.setLevel(logging.DEBUG)
 
         self.content_grid = Gtk.Grid()
         self.content_grid.set_margin_left(12)
@@ -206,12 +206,18 @@ class Flatpak(Gtk.Box):
     def on_add_button_clicked(self, widget):
         dialog = AddDialog(self.parent.parent)
         response = dialog.run()
+        self.log.debug('Response type: %s', response)
 
-        if response is Gtk.ResponseType.OK:
+        if response == Gtk.ResponseType.OK:
             name = dialog.name_entry.get_text()
             url = dialog.url_entry.get_text()
+            self.log.info('Adding flatpak source %s at %s', name, url)
             dialog.destroy()
             flatpak.remotes.add_remote(name, url)
+        else:
+            dialog.destroy()
+        
+        self.generate_entries()
 
     def generate_entries(self):
         self.remote_liststore.clear()
