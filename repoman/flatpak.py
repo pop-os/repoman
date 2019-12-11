@@ -22,7 +22,8 @@
 import gi
 import logging
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GObject
+gi.require_version('Pango', '1.0')
+from gi.repository import Gtk, GObject, Pango
 
 import pyflatpak as flatpak
 
@@ -55,18 +56,19 @@ class AddDialog(Gtk.Dialog):
         content_area = self.get_content_area()
 
         content_grid = Gtk.Grid()
-        content_grid.set_margin_top(24)
+        content_grid.set_margin_top(12)
         content_grid.set_margin_left(12)
         content_grid.set_margin_right(12)
         content_grid.set_margin_bottom(12)
         content_grid.set_row_spacing(6)
+        content_grid.set_column_spacing(6)
         content_grid.set_halign(Gtk.Align.CENTER)
         content_grid.set_hexpand(True)
         content_area.add(content_grid)
 
         add_title = Gtk.Label(_("Enter Source Details"))
         Gtk.StyleContext.add_class(add_title.get_style_context(), "h2")
-        content_grid.attach(add_title, 0, 0, 1, 1)
+        content_grid.attach(add_title, 0, 0, 2, 1)
 
         self.name_entry = Gtk.Entry()
         self.name_entry.set_placeholder_text(_("Source Name"))
@@ -86,6 +88,9 @@ class AddDialog(Gtk.Dialog):
 
         self.add_button = self.get_widget_for_response(Gtk.ResponseType.OK)
         self.add_button.set_sensitive(False)
+
+        self.cancel_button = self.get_widget_for_response(Gtk.ResponseType.CANCEL)
+        self.cancel_button.grab_focus()
 
         Gtk.StyleContext.add_class(self.add_button.get_style_context(),
                                    "suggested-action")
@@ -237,19 +242,31 @@ class Flatpak(Gtk.Box):
         Gtk.StyleContext.add_class(list_window.get_style_context(), "list_window")
         list_grid.attach(list_window, 0, 0, 1, 1)
 
-        self.remote_liststore = Gtk.ListStore(str, str, str, str)
+        self.remote_liststore = Gtk.ListStore(str, str, str, str, str)
         self.view = Gtk.TreeView(self.remote_liststore)
         
         name_renderer = Gtk.CellRendererText()
-        url_renderer = Gtk.CellRendererText()
-        option_renderer = Gtk.CellRendererText()
-
+        name_renderer.props.wrap_mode = Pango.WrapMode.WORD_CHAR
+        name_renderer.props.wrap_width = 120
         name_column = Gtk.TreeViewColumn(_('Source'), name_renderer, markup=1)
-        url_column = Gtk.TreeViewColumn(_('URL'), url_renderer, markup=2)
-        option_column = Gtk.TreeViewColumn(_('Option'), option_renderer, markup=3)
-        
+        # name_column.set_resizable(True)
         self.view.append_column(name_column)
+        
+        about_renderer = Gtk.CellRendererText()
+        about_renderer.props.wrap_mode = Pango.WrapMode.WORD_CHAR
+        about_renderer.props.wrap_width = 240
+        about_column = Gtk.TreeViewColumn(_('About'), about_renderer, markup=2)
+        about_column.set_expand(True)
+        self.view.append_column(about_column)
+
+        url_renderer = Gtk.CellRendererText()
+        url_column = Gtk.TreeViewColumn(_('URL'), url_renderer, markup=3)
+        url_column.set_expand(True)
         self.view.append_column(url_column)
+
+        option_renderer = Gtk.CellRendererText()
+        option_column = Gtk.TreeViewColumn(_('Option'), option_renderer, markup=4)
+        option_column.set_min_width(80)
         self.view.append_column(option_column)
 
         self.view.set_hexpand(True)
@@ -288,6 +305,8 @@ class Flatpak(Gtk.Box):
     def on_delete_button_clicked(self, widget):
         remote = self.get_selected_remote(0)
         name = self.get_selected_remote(1)
+        name = name.replace('<b>', '')
+        name = name.replace('</b>', '')
         self.log.info('Deleting remote %s', remote)
 
         dialog = DeleteDialog(self.parent.parent, name)
@@ -310,6 +329,8 @@ class Flatpak(Gtk.Box):
     def on_row_activated(self, widget, data1, data2):
         remote = self.get_selected_remote(0)
         name = self.get_selected_remote(1)
+        name = name.replace('<b>', '')
+        name = name.replace('</b>', '')
         self.log.info('Deleting remote %s', remote)
 
         dialog = DeleteDialog(self.parent.parent, name)
@@ -351,7 +372,8 @@ class Flatpak(Gtk.Box):
             self.remote_liststore.append(
                 [
                     remotes[remote]["name"],
-                    remotes[remote]["title"],
+                    f'<b>{remotes[remote]["title"]}</b>',
+                    remotes[remote]["about"],
                     remotes[remote]["url"],
                     remotes[remote]["option"]
                 ]
