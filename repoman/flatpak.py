@@ -71,6 +71,7 @@ class AddDialog(Gtk.Dialog):
         self.name_entry = Gtk.Entry()
         self.name_entry.set_placeholder_text(_("Source Name"))
         self.name_entry.set_activates_default(True)
+        self.name_entry.connect(_("changed"), self.on_name_entry_changed)
         self.name_entry.set_width_chars(20)
         self.name_entry.set_margin_top(12)
         content_grid.attach(self.name_entry, 0, 1, 1, 1)
@@ -78,7 +79,7 @@ class AddDialog(Gtk.Dialog):
         self.url_entry = Gtk.Entry()
         self.url_entry.set_placeholder_text(_("URL"))
         self.url_entry.set_activates_default(True)
-        self.url_entry.connect(_("changed"), self.on_entry_changed)
+        self.url_entry.connect(_("changed"), self.on_url_entry_changed)
         self.url_entry.set_width_chars(50)
         self.url_entry.set_margin_top(12)
         content_grid.attach(self.url_entry, 1, 1, 1, 1)
@@ -92,13 +93,48 @@ class AddDialog(Gtk.Dialog):
 
         self.show_all()
 
-    def on_entry_changed(self, widget):
+    def on_url_entry_changed(self, widget):
         entry_text = widget.get_text()
         entry_valid = flatpak.validate(entry_text)
         try:
             self.add_button.set_sensitive(entry_valid)
         except TypeError:
             pass
+    
+    def on_name_entry_changed(self, widget):
+        # Filter out some special characters, which may not be allowed by spec
+        # and are likely to cause frustration for users who later use the 
+        # Flatpak CLI.
+        replacements = {
+            ' ': '-',
+            '%': '',
+            '(': '',
+            ')': '',
+            '{': '',
+            '}': '',
+            '[': '',
+            ']': '',
+            '#': '',
+            '~': '',
+            '"': '',
+            "'": '',
+            '\\': '',
+            '/': '',
+            '|': '',
+            '&': '',
+            '`': '',
+            '*': '',
+            ';': '',
+            ':': ''
+        }
+        entry_text = self.name_entry.get_text()
+        self.log.debug('Validating name: %s', entry_text)
+        print(entry_text)
+
+        # Perform the filtering:
+        for char in replacements:
+            entry_text = entry_text.replace(char, replacements[char])
+        self.name_entry.set_text(entry_text)
 
 class DeleteDialog(Gtk.Dialog):
 
