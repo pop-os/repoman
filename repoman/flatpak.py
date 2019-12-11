@@ -22,7 +22,7 @@
 import gi
 import logging
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, GObject
 
 import pyflatpak as flatpak
 
@@ -93,15 +93,16 @@ class AddDialog(Gtk.Dialog):
 
         self.show_all()
 
-    def on_url_entry_changed(self, widget):
-        entry_text = widget.get_text()
+    def on_url_entry_changed(self, entry):
+        entry_text = entry.get_text()
         entry_valid = flatpak.validate(entry_text)
         try:
             self.add_button.set_sensitive(entry_valid)
         except TypeError:
             pass
     
-    def on_name_entry_changed(self, widget):
+    def on_name_entry_changed(self, entry, data=None):
+        print(data)
         # Filter out some special characters, which may not be allowed by spec
         # and are likely to cause frustration for users who later use the 
         # Flatpak CLI.
@@ -127,14 +128,20 @@ class AddDialog(Gtk.Dialog):
             ';': '',
             ':': ''
         }
-        entry_text = self.name_entry.get_text()
-        self.log.debug('Validating name: %s', entry_text)
-        print(entry_text)
+        # Store the cursor position so we can return to it later
+        pos = entry.get_position()
+
+        entry_text = entry.get_text()
+        self.log.debug('Validating name: %s, cursor at %s', entry_text, pos)
 
         # Perform the filtering:
         for char in replacements:
-            entry_text = entry_text.replace(char, replacements[char])
-        self.name_entry.set_text(entry_text)
+            if char in entry_text:
+                entry_text = entry_text.replace(char, replacements[char])
+                entry.set_text(entry_text)
+                if char is " ":
+                    pos += 1
+                GObject.idle_add(entry.set_position, pos)
 
 class DeleteDialog(Gtk.Dialog):
 
