@@ -265,7 +265,7 @@ class Flatpak(Gtk.Box):
         self.view.append_column(url_column)
 
         option_renderer = Gtk.CellRendererText()
-        option_column = Gtk.TreeViewColumn(_('Option'), option_renderer, markup=4)
+        option_column = Gtk.TreeViewColumn(_('Type'), option_renderer, markup=4)
         option_column.set_min_width(80)
         self.view.append_column(option_column)
 
