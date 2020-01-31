@@ -33,6 +33,7 @@ import pyflatpak as flatpak
 from pyflatpak.remotes import AddRemoteError, DeleteRemoteError
 
 from .dialog import ErrorDialog
+from .icon import RemoteIcon
 
 import gettext
 gettext.bindtextdomain('repoman', '/usr/share/repoman/po')
@@ -191,6 +192,9 @@ class InfoDialog(Gtk.Dialog):
         remote_title = flatpak.remotes.remotes[self.option][self.remote]['title']
         description = flatpak.remotes.remotes[self.option][self.remote]['about']
         url = flatpak.remotes.remotes[self.option][self.remote]['url']
+        icon = RemoteIcon(self.remote, self.option)
+
+        content_grid.attach(icon.get_icon(), 0, 0, 1, 1)
 
         title_label = Gtk.Label()
         title_label.set_line_wrap(True)
