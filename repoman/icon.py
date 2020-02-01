@@ -78,7 +78,7 @@ class RemoteIcon:
         else:
             image = Gtk.Image.new_from_icon_name(
                 'notfound',
-                Gtk.IconSize.LARGE_TOOLBAR
+                Gtk.IconSize.SMALL_TOOLBAR
             )
             image.props.opacity = 0
 
