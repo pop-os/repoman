@@ -22,12 +22,13 @@
 from os.path import splitext
 from subprocess import CalledProcessError
 from sys import exc_info
+import time
 
 import gi
 import logging
 gi.require_version('Gtk', '3.0')
 gi.require_version('Pango', '1.0')
-from gi.repository import Gtk, GObject, Pango
+from gi.repository import Gtk, GObject, Pango, Gio, GdkPixbuf, GLib
 
 import pyflatpak as flatpak
 from pyflatpak.remotes import AddRemoteError, DeleteRemoteError
@@ -162,6 +163,7 @@ class InfoDialog(Gtk.Dialog):
     def __init__(self, parent, remote, name, option):
         self.remote = remote
         self.option = option
+        self.icon_tool = RemoteIcon(remote, option)
 
         settings = Gtk.Settings.get_default()
         header = settings.props.gtk_dialogs_use_header
@@ -192,9 +194,13 @@ class InfoDialog(Gtk.Dialog):
         remote_title = flatpak.remotes.remotes[self.option][self.remote]['title']
         description = flatpak.remotes.remotes[self.option][self.remote]['about']
         url = flatpak.remotes.remotes[self.option][self.remote]['url']
-        icon = RemoteIcon(self.remote, self.option)
+        
+        self.icon_box = Gtk.Box()
+        self.icon_box.set_halign(Gtk.Align.CENTER)
+        content_grid.attach(self.icon_box, 0, 0, 1, 1)
 
-        content_grid.attach(icon.get_icon(), 0, 0, 1, 1)
+        self.icon = self.icon_tool.get_cached()
+        self.icon_box.add(self.icon)
 
         title_label = Gtk.Label()
         title_label.set_line_wrap(True)
@@ -222,6 +228,34 @@ class InfoDialog(Gtk.Dialog):
         url_button = Gtk.LinkButton.new_with_label(_('Homepage'))
         url_button.set_uri(url)
         content_grid.attach(url_button, 0, 4, 1, 1)
+
+        self.get_latest_icon()
+
+    def get_latest_icon(self):
+        if self.icon_tool.url:
+            self.log.debug('Fetching latest icon from %s', self.icon_tool.url)
+            icon_ = Gio.File.new_for_uri(self.icon_tool.url)
+            icon_.load_contents_async(
+                self.icon_tool.cancellable, self.on_icon_ready, None
+            )
+    
+    def on_icon_ready(self, source_object, result, user_data):
+        try:
+            a, content, b = source_object.load_contents_finish(result)
+        except GLib.GError as e:
+            self.log.debug('Could not fetch updated icon, %s', e.message)
+            icon = self.icon_tool.get_cached()
+
+        else:
+            with open(self.icon_tool.cached, mode='w') as cached:
+                cached.write(content.decode('UTF-8'))
+            icon = self.icon_tool.get_cached()
+        finally:
+            self.icon.destroy()
+            self.icon = icon
+            self.icon.show()
+            self.icon_box.add(self.icon)
+            self.log.debug('Got latest %s icon', self.remote)
 
 
 class Flatpak(Gtk.Box):

@@ -20,6 +20,7 @@
 
 import gi
 import logging
+import os
 import pathlib
 import urllib
 
@@ -36,50 +37,56 @@ import pyflatpak as flatpak
 
 class RemoteIcon:
     def __init__(self, remote_name, option):
+        self.log = logging.getLogger('repoman.icon_tool')
+        self.cancellable = Gio.Cancellable()
         self.remote_data = flatpak.remotes.remotes[option][remote_name]
         self.remote_name = remote_name
         self.url = self.remote_data['icon']
-        self.cached = f'/usr/share/repoman/icon-cache/{self.remote_name}.svg'
-        # icon_cache = pathlib.Path('/usr/share/repoman/icon-cache/')
-        # icon_cache.mkdir(parents=True, exist_ok=True)
+
+        self.cache_dir = pathlib.Path(
+            os.path.join(
+                flatpak.remotes.fp_user_config_filepath,
+                'repo',
+                'icon_cache'
+            )
+        )
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.cached = os.path.join(self.cache_dir, f'{self.remote_name}.svg')
+
     
     def get_cached(self):
+        """Get a cached icon for the remote.
         
-        stream = Gio.MemoryInputStream.new_from_bytes(
-            GLib.Bytes.new(self.cached)
-        )
+        Usually we get this when we first add the remote, so it should be 
+        present on-disk as a fallback.
+        """
 
-        pixbuf = GdkPixbuf.Pixbuf.new_from_stream(stream, None)
+        self.log.debug('Getting cached icon from %s', self.cached)
+        try:
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                self.cached, 64, -1, True
+            )
+            self.log.debug('Cached icon found')
+        except GLib.GError:
+            self.log.debug('No cached icon found!')
+            return self.get_no_icon()
+
+        image = self.get_image_from_pixbuf(pixbuf)
+        return image
+    
+    def get_no_icon(self):
+        image = Gtk.Image.new_from_icon_name(
+            'notfound',
+            Gtk.IconSize.SMALL_TOOLBAR
+        )
+        image.props.opacity = 0
+
+        return image
+    
+    def get_image_from_pixbuf(self, pixbuf):
+
         image = Gtk.Image.new_from_pixbuf(pixbuf)
         image.set_margin_top(12)
         image.set_margin_bottom(12)
-
         return image
-    
-    def get_icon(self):
-        if self.url:
-            with urllib.request.urlopen(self.url) as icon:
-                svgdata = icon.read()
             
-            stream = Gio.MemoryInputStream.new_from_bytes(
-                GLib.Bytes.new(svgdata)
-            )
-            pixbuf = GdkPixbuf.Pixbuf.new_from_stream_at_scale(
-                stream,
-                64,
-                -1,
-                True,
-                None
-            )
-            image = Gtk.Image.new_from_pixbuf(pixbuf)
-            image.set_margin_top(12)
-            image.set_margin_bottom(12)
-        
-        else:
-            image = Gtk.Image.new_from_icon_name(
-                'notfound',
-                Gtk.IconSize.SMALL_TOOLBAR
-            )
-            image.props.opacity = 0
-
-        return image
