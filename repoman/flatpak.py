@@ -393,7 +393,7 @@ class Flatpak(Gtk.Box):
         option = self.get_selected_remote(4)
 
         dialog = InfoDialog(self.parent.parent, remote, name, option)
-        response = dialog.run()
+        dialog.run()
         dialog.destroy()
     
     def strip_bold_from_name(self, name):
