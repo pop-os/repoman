@@ -25,7 +25,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 from softwareproperties.SoftwareProperties import SoftwareProperties
 from .ppa import PPA
-from .dialog import AddDialog, EditDialog, ErrorDialog
+from .dialog import AddDialog, EditDialog, ErrorDialog, DeleteDialog
 import gettext
 gettext.bindtextdomain('repoman', '/usr/share/repoman/po')
 gettext.textdomain("repoman")
@@ -102,15 +102,43 @@ class List(Gtk.Box):
         edit_button.set_tooltip_text(_("Modify Selected Source"))
         edit_button.connect("clicked", self.on_edit_button_clicked)
 
+        # delete button
+        delete_button = Gtk.ToolButton()
+        delete_button.set_icon_name("edit-delete-symbolic")
+        Gtk.StyleContext.add_class(delete_button.get_style_context(),
+                                   "image-button")
+        delete_button.set_tooltip_text(_("Modify Selected Source"))
+        delete_button.connect("clicked", self.on_delete_button_clicked)
+
         action_bar = Gtk.Toolbar()
         action_bar.set_icon_size(Gtk.IconSize.SMALL_TOOLBAR)
         Gtk.StyleContext.add_class(action_bar.get_style_context(),
                                    "inline-toolbar")
+        action_bar.insert(delete_button, 0)
         action_bar.insert(edit_button, 0)
         action_bar.insert(add_button, 0)
         list_grid.attach(action_bar, 0, 1, 1, 1)
 
         self.generate_entries(self.ppa.get_isv())
+    
+    def on_delete_button_clicked(self, widget):
+        selec = self.view.get_selection()
+        (model, pathlist) = selec.get_selected_rows()
+        tree_iter = model.get_iter(pathlist[0])
+        value = model.get_value(tree_iter, 1)
+        self.log.debug('Deleting PPA: %s', value)
+        self.do_delete(value)
+    
+    def do_delete(self, repo):
+        dialog = DeleteDialog(self.parent.parent)
+        response = dialog.run()
+
+        if response == Gtk.ResponseType.OK:
+            self.ppa.remove(repo)
+            dialog.destroy()
+        
+        else:
+            dialog.destroy()
 
     def on_edit_button_clicked(self, widget):
         selec = self.view.get_selection()

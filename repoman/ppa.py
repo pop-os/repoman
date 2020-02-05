@@ -51,20 +51,26 @@ class RemoveThread(threading.Thread):
     def run(self):
         self.log.info( "Removing PPA %s" % (self.ppa) )
         try:
-            privileged_object.delete_repo(self.ppa)
-            self.sp.reload_sourceslist()
-        except dbus.exceptions.DBusException:
-            self.exc = sys.exc_info()
-            self.log.warn(self.exc[1])
-            self.throw_error(f'Could not delete source {str(self.ppa)}')
-        except:
-            self.exc = sys.exc_info()
-            self.log.warn(self.exc[1])
-            self.throw_error(self.exc[1])
+            success, message = privileged_object.delete_repo(self.ppa)
+
+            if not success:
+                self.log.error(message)
+                self.throw_error(message)
+
+        except dbus.exceptions.DBusException as e:
+            if 'PermissionDeniedByPolicy' in e._dbus_error_name:
+                self.throw_error(
+                    'You don\'t have permissions to modify the software sources.'
+                )
+            else:
+                self.throw_error(str(e))
+                raise e
+
+        self.sp.reload_sourceslist()
         isv_list = self.sp.get_isv_sources()
-        GObject.idle_add(self.parent.parent.stack.list_all.generate_entries, isv_list)
-        GObject.idle_add(self.parent.parent.stack.list_all.view.set_sensitive, True)
-        GObject.idle_add(self.parent.parent.hbar.spinner.stop)
+        GObject.idle_add(self.parent.parent.parent.stack.list_all.generate_entries, isv_list)
+        GObject.idle_add(self.parent.parent.parent.stack.list_all.view.set_sensitive, True)
+        GObject.idle_add(self.parent.parent.parent.hbar.spinner.stop)
 
     def throw_error(self, message):
         GObject.idle_add(self.parent.parent.stack.list_all.throw_error_dialog,
@@ -87,16 +93,22 @@ class AddThread(threading.Thread):
         self.log.info("Adding PPA %s" % (self.url))
 
         try:
-            privileged_object.add_repo(self.url)
-            self.sp.reload_sourceslist()
-        except dbus.exceptions.DBusException:
-            self.exc = sys.exc_info()
-            self.log.warn(self.exc[1])
-            self.throw_error(f'Could not add source {self.url}')
-        except:
-            self.exc = sys.exc_info()
-            self.log.warn(self.exc[1])
-            self.throw_error(self.exc[1])
+            success, message = privileged_object.add_repo(self.url)
+
+            if not success:
+                self.log.error(message)
+                self.throw_error(message)
+
+        except dbus.exceptions.DBusException as e:
+            if 'PermissionDeniedByPolicy' in e._dbus_error_name:
+                self.throw_error(
+                    'You don\'t have permissions to modify the software sources.'
+                )
+            else:
+                self.throw_error(str(e))
+                raise e
+
+        self.sp.reload_sourceslist()
         isv_list = self.sp.get_isv_sources()
         GObject.idle_add(self.parent.parent.parent.stack.list_all.generate_entries, isv_list)
         GObject.idle_add(self.parent.parent.parent.stack.list_all.view.set_sensitive, True)
@@ -122,16 +134,24 @@ class ModifyThread(threading.Thread):
 
     def run(self):
         try:
-            privileged_object.modify_repo(self.old_source.__str__(), self.new_source)
-            self.sp.reload_sourceslist()
-        except dbus.exceptions.DBusException:
-            self.exc = sys.exc_info()
-            self.log.warn(self.exc[1])
-            self.throw_error(f'Could not modify source {str(self.old_source)}')
-        except:
-            self.exc = sys.exc_info()
-            self.log.warn(self.exc[1])
-            self.throw_error(self.exc[1])
+            success, message = privileged_object.modify_repo(
+                self.old_source.__str__(), self.new_source
+            )
+
+            if not success:
+                self.log.error(message)
+                self.throw_error(message)
+
+        except dbus.exceptions.DBusException as e:
+            if 'PermissionDeniedByPolicy' in e._dbus_error_name:
+                self.throw_error(
+                    'You don\'t have permissions to modify the software sources.'
+                )
+            else:
+                self.throw_error(str(e))
+                raise e
+
+        self.sp.reload_sourceslist()
         isv_list = self.sp.get_isv_sources()
         GObject.idle_add(self.parent.parent.parent.stack.list_all.generate_entries, isv_list)
         GObject.idle_add(self.parent.parent.parent.stack.list_all.view.set_sensitive, True)
@@ -249,8 +269,8 @@ class PPA:
 
     # Starts a new thread to remove a repository
     def remove(self, ppa):
-        self.parent.parent.hbar.spinner.start()
-        self.parent.parent.stack.list_all.view.set_sensitive(False)
+        self.parent.parent.parent.hbar.spinner.start()
+        self.parent.parent.parent.stack.list_all.view.set_sensitive(False)
         RemoveThread(self.parent, self.sources_path, ppa, self.sp).start()
 
     # Validate if a line appears to be a valid apt line or ppa.

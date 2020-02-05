@@ -57,7 +57,7 @@ class PPA(dbus.service.Object):
     
     @dbus.service.method(
         'org.pop_os.repoman.Interface',
-        in_signature='s', out_signature='i',
+        in_signature='s', out_signature='bs',
         sender_keyword='sender', connection_keyword='conn'
     )
     def add_repo(self, line, sender=None, conn=None):
@@ -72,14 +72,14 @@ class PPA(dbus.service.Object):
             self.cache.update()
             self.cache.open(None)
             self.sp.reload_sourceslist()
-            return 0
-        except:
-            self.exc = sys.exc_info()
-            raise RepomanException(self.exc[1])
+            return [True, '']
+        except Exception as e:
+            print(str(e))
+            return [False, str(e)]
     
     @dbus.service.method(
         'org.pop_os.repoman.Interface',
-        in_signature='s', out_signature='i',
+        in_signature='s', out_signature='bs',
         sender_keyword='sender', connection_keyword='conn'
     )
     def delete_repo(self, repo, sender=None, conn=None):
@@ -94,14 +94,14 @@ class PPA(dbus.service.Object):
             self.cache.update()
             self.cache.open(None)
             self.sp.reload_sourceslist()
-            return 0
-        except:
-            self.exc = sys.exc_info()
-            raise RepomanException(self.exc[1])
+            return [True, '']
+        except Exception as e:
+            print(str(e))
+            return [False, str(e)]
 
     @dbus.service.method(
         'org.pop_os.repoman.Interface',
-        in_signature='ss', out_signature='i',
+        in_signature='ss', out_signature='bs',
         sender_keyword='sender', connection_keyword='conn'
     )
     def modify_repo(self, old_repo, new_repo, sender=None, conn=None):
@@ -120,10 +120,10 @@ class PPA(dbus.service.Object):
             self.cache.update()
             self.cache.open(None)
             self.sp.reload_sourceslist()
-            return 0
-        except:
-            self.exc = sys.exc_info()
-            raise RepomanException(self.exc[1])
+            return [True, '']
+        except Exception as e:
+            print(str(e))
+            return [False, str(e)]
     
     @dbus.service.method(
         'org.pop_os.repoman.Interface',
