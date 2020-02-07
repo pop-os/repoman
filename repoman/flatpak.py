@@ -306,7 +306,6 @@ class Flatpak(Gtk.Box):
         name_renderer.props.wrap_mode = Pango.WrapMode.WORD_CHAR
         name_renderer.props.wrap_width = 120
         name_column = Gtk.TreeViewColumn(_('Source'), name_renderer, markup=1)
-        # name_column.set_resizable(True)
         self.view.append_column(name_column)
 
         url_renderer = Gtk.CellRendererText()
@@ -321,41 +320,44 @@ class Flatpak(Gtk.Box):
 
         self.view.set_hexpand(True)
         self.view.set_vexpand(True)
-        tree_selection = self.view.get_selection()
-        tree_selection.connect('changed', self.on_row_change)
+        self.tree_selection = self.view.get_selection()
+        self.tree_selection.connect('changed', self.on_row_selected)
         list_window.add(self.view)
 
         # add button
-        add_button = Gtk.ToolButton()
-        add_button.set_icon_name("list-add-symbolic")
-        Gtk.StyleContext.add_class(add_button.get_style_context(),
+        self.add_button = Gtk.ToolButton()
+        self.add_button.set_sensitive(False)
+        self.add_button.set_icon_name("list-add-symbolic")
+        Gtk.StyleContext.add_class(self.add_button.get_style_context(),
                                    "image-button")
-        add_button.set_tooltip_text(_("Add New Source"))
-        add_button.connect("clicked", self.on_add_button_clicked)
+        self.add_button.set_tooltip_text(_("Add New Source"))
+        self.add_button.connect("clicked", self.on_add_button_clicked)
 
         # info button
-        info_button = Gtk.ToolButton()
-        info_button.set_icon_name('help-info-symbolic')
-        Gtk.StyleContext.add_class(add_button.get_style_context(),
+        self.info_button = Gtk.ToolButton()
+        self.info_button.set_sensitive(False)
+        self.info_button.set_icon_name('help-info-symbolic')
+        Gtk.StyleContext.add_class(self.add_button.get_style_context(),
                                    "image-button")
-        info_button.set_tooltip_text(_('Remote Info'))
-        info_button.connect('clicked', self.on_info_button_clicked)
+        self.info_button.set_tooltip_text(_('Remote Info'))
+        self.info_button.connect('clicked', self.on_info_button_clicked)
 
         # delete button
-        delete_button = Gtk.ToolButton()
-        delete_button.set_icon_name("edit-delete-symbolic")
-        Gtk.StyleContext.add_class(delete_button.get_style_context(),
+        self.delete_button = Gtk.ToolButton()
+        self.delete_button.set_sensitive(False)
+        self.delete_button.set_icon_name("edit-delete-symbolic")
+        Gtk.StyleContext.add_class(self.delete_button.get_style_context(),
                                    "image-button")
-        delete_button.set_tooltip_text(_("Remove Selected Source"))
-        delete_button.connect("clicked", self.on_delete_button_clicked)
+        self.delete_button.set_tooltip_text(_("Remove Selected Source"))
+        self.delete_button.connect("clicked", self.on_delete_button_clicked)
 
         action_bar = Gtk.Toolbar()
         action_bar.set_icon_size(Gtk.IconSize.SMALL_TOOLBAR)
         Gtk.StyleContext.add_class(action_bar.get_style_context(),
                                    "inline-toolbar")
-        action_bar.insert(delete_button, 0)
-        action_bar.insert(info_button, 0)
-        action_bar.insert(add_button, 0)
+        action_bar.insert(self.delete_button, 0)
+        action_bar.insert(self.info_button, 0)
+        action_bar.insert(self.add_button, 0)
         list_grid.attach(action_bar, 0, 1, 1, 1)
 
         self.generate_entries()
@@ -369,6 +371,9 @@ class Flatpak(Gtk.Box):
         response = dialog.run()
         
         if response == Gtk.ResponseType.OK:
+            self.add_button.set_sensitive(False)
+            self.info_button.set_sensitive(False)
+            self.delete_button.set_sensitive(False)
             try:
                 flatpak.remotes.delete_remote(remote)
             except DeleteRemoteError:
@@ -431,6 +436,9 @@ class Flatpak(Gtk.Box):
         self.log.debug('Response type: %s', response)
 
         if response == Gtk.ResponseType.OK:
+            self.add_button.set_sensitive(False)
+            self.info_button.set_sensitive(False)
+            self.delete_button.set_sensitive(False)
             url = dialog.url_entry.get_text().strip()
             name = splitext(url.split('/')[-1])[0]
             self.log.info('Adding flatpak source %s at %s', name, url)
@@ -475,13 +483,20 @@ class Flatpak(Gtk.Box):
                     remotes[remote]["option"]
                 ]
             )
+        self.add_button.set_sensitive(True)
 
-    def on_row_change(self, widget):
+    def on_row_selected(self, widget):
         (model, pathlist) = widget.get_selected_rows()
-        for path in pathlist :
-            tree_iter = model.get_iter(path)
-            value = model.get_value(tree_iter,1)
-            self.remote_name = value
+        if pathlist:
+            self.info_button.set_sensitive(True)
+            self.delete_button.set_sensitive(True)
+            for path in pathlist :
+                tree_iter = model.get_iter(path)
+                value = model.get_value(tree_iter,1)
+                self.remote_name = value
+        else:
+            self.info_button.set_sensitive(False)
+            self.delete_button.set_sensitive(False)
 
     def throw_error_dialog(self, message, msg_type):
         if msg_type == "error":

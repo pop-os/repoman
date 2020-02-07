@@ -82,41 +82,44 @@ class List(Gtk.Box):
         self.view.append_column(column)
         self.view.set_hexpand(True)
         self.view.set_vexpand(True)
-        tree_selection = self.view.get_selection()
-        tree_selection.connect('changed', self.on_row_change)
+        self.tree_selection = self.view.get_selection()
+        self.tree_selection.connect('changed', self.on_row_selected)
         list_window.add(self.view)
 
         # add button
-        add_button = Gtk.ToolButton()
-        add_button.set_icon_name("list-add-symbolic")
-        Gtk.StyleContext.add_class(add_button.get_style_context(),
+        self.add_button = Gtk.ToolButton()
+        self.add_button.set_sensitive(False)
+        self.add_button.set_icon_name("list-add-symbolic")
+        Gtk.StyleContext.add_class(self.add_button.get_style_context(),
                                    "image-button")
-        add_button.set_tooltip_text(_("Add New Source"))
-        add_button.connect("clicked", self.on_add_button_clicked)
+        self.add_button.set_tooltip_text(_("Add New Source"))
+        self.add_button.connect("clicked", self.on_add_button_clicked)
 
         # edit button
-        edit_button = Gtk.ToolButton()
-        edit_button.set_icon_name("edit-symbolic")
-        Gtk.StyleContext.add_class(edit_button.get_style_context(),
+        self.edit_button = Gtk.ToolButton()
+        self.edit_button.set_sensitive(False)
+        self.edit_button.set_icon_name("edit-symbolic")
+        Gtk.StyleContext.add_class(self.edit_button.get_style_context(),
                                    "image-button")
-        edit_button.set_tooltip_text(_("Modify Selected Source"))
-        edit_button.connect("clicked", self.on_edit_button_clicked)
+        self.edit_button.set_tooltip_text(_("Modify Selected Source"))
+        self.edit_button.connect("clicked", self.on_edit_button_clicked)
 
         # delete button
-        delete_button = Gtk.ToolButton()
-        delete_button.set_icon_name("edit-delete-symbolic")
-        Gtk.StyleContext.add_class(delete_button.get_style_context(),
+        self.delete_button = Gtk.ToolButton()
+        self.delete_button.set_sensitive(False)
+        self.delete_button.set_icon_name("edit-delete-symbolic")
+        Gtk.StyleContext.add_class(self.delete_button.get_style_context(),
                                    "image-button")
-        delete_button.set_tooltip_text(_("Modify Selected Source"))
-        delete_button.connect("clicked", self.on_delete_button_clicked)
+        self.delete_button.set_tooltip_text(_("Modify Selected Source"))
+        self.delete_button.connect("clicked", self.on_delete_button_clicked)
 
         action_bar = Gtk.Toolbar()
         action_bar.set_icon_size(Gtk.IconSize.SMALL_TOOLBAR)
         Gtk.StyleContext.add_class(action_bar.get_style_context(),
                                    "inline-toolbar")
-        action_bar.insert(delete_button, 0)
-        action_bar.insert(edit_button, 0)
-        action_bar.insert(add_button, 0)
+        action_bar.insert(self.delete_button, 0)
+        action_bar.insert(self.edit_button, 0)
+        action_bar.insert(self.add_button, 0)
         list_grid.attach(action_bar, 0, 1, 1, 1)
 
         self.generate_entries(self.ppa.get_isv())
@@ -134,6 +137,9 @@ class List(Gtk.Box):
         response = dialog.run()
 
         if response == Gtk.ResponseType.OK:
+            self.add_button.set_sensitive(False)
+            self.edit_button.set_sensitive(False)
+            self.delete_button.set_sensitive(False)
             self.ppa.remove(repo)
             dialog.destroy()
         
@@ -167,6 +173,9 @@ class List(Gtk.Box):
         response = dialog.run()
 
         if response == Gtk.ResponseType.OK:
+            self.add_button.set_sensitive(False)
+            self.edit_button.set_sensitive(False)
+            self.delete_button.set_sensitive(False)
             if dialog.type_box.get_active() == 0:
                 new_rtype = "deb"
             elif dialog.type_box.get_active() == 1:
@@ -197,6 +206,9 @@ class List(Gtk.Box):
         response = dialog.run()
 
         if response == Gtk.ResponseType.OK:
+            self.add_button.set_sensitive(False)
+            self.edit_button.set_sensitive(False)
+            self.delete_button.set_sensitive(False)
             url = dialog.ppa_entry.get_text()
             dialog.destroy()
             self.ppa.add(url)
@@ -228,13 +240,20 @@ class List(Gtk.Box):
                     self.ppa_liststore.insert_with_valuesv(-1,
                                                            [0, 1],
                                                            [source_pretty, str(source)])
+        self.add_button.set_sensitive(True)
 
-    def on_row_change(self, widget):
+    def on_row_selected(self, widget):
         (model, pathlist) = widget.get_selected_rows()
-        for path in pathlist :
-            tree_iter = model.get_iter(path)
-            value = model.get_value(tree_iter,1)
-            self.ppa_name = value
+        if pathlist:
+            self.edit_button.set_sensitive(True)
+            self.delete_button.set_sensitive(True)
+            for path in pathlist :
+                tree_iter = model.get_iter(path)
+                value = model.get_value(tree_iter,1)
+                self.remote_name = value
+        else:
+            self.edit_button.set_sensitive(False)
+            self.delete_button.set_sensitive(False)
 
     def throw_error_dialog(self, message, msg_type):
         dialog = ErrorDialog(
