@@ -159,7 +159,7 @@ class DeleteDialog(Gtk.Dialog):
 class InfoDialog(Gtk.Dialog):
 
     def __init__(self, parent, remote, name, option):
-        self.remote = remote
+        self.remote_name = remote
         self.option = option
         self.remote_data = flatpak.remotes.remotes[option][remote]
 
@@ -174,12 +174,27 @@ class InfoDialog(Gtk.Dialog):
         )
         self.log = logging.getLogger('repoman.FPInfoDialog')
 
+<<<<<<< HEAD
         self.log.debug('Data for remote %s: %s', remote, self.remote_data)
+=======
+        remote_info = str(flatpak.remotes.remotes[self.option][self.remote_name])
+        remote_info = remote_info.replace("', '", "'\n'")
+        self.log.debug(
+            'Creating Info page for %s: /n %s', self.remote_name, remote_info
+        )
+>>>>>>> Add in disable toggle
 
         self.set_resizable(False)
 
         content_area = self.get_content_area()
         headerbar = self.get_header_bar()
+        
+        self.disable_switch = Gtk.Switch()
+        self.disable_switch.set_active(
+            flatpak.remotes.remotes[self.option][self.remote_name]
+        )
+        self.disable_switch.connect('state-set', self.on_switch_toggled)
+        headerbar.pack_end(self.disable_switch)
 
         content_grid = Gtk.Grid()
         content_grid.set_halign(Gtk.Align.CENTER)
@@ -191,9 +206,15 @@ class InfoDialog(Gtk.Dialog):
         content_grid.set_row_spacing(6)
         content_area.add(content_grid)
 
+<<<<<<< HEAD
         remote_title = self.remote_data['title']
         description = self.remote_data['about']
         url = self.remote_data['homepage']
+=======
+        remote_title = flatpak.remotes.remotes[self.option][self.remote_name]['title']
+        description = flatpak.remotes.remotes[self.option][self.remote_name]['about']
+        url = flatpak.remotes.remotes[self.option][self.remote_name]['url']
+>>>>>>> Add in disable toggle
 
         title_label = Gtk.Label()
         title_label.set_line_wrap(True)
@@ -201,7 +222,7 @@ class InfoDialog(Gtk.Dialog):
         content_grid.attach(title_label, 0, 1, 1, 1)
 
         name_label = Gtk.Label()
-        name_label.set_markup(f'<i><small>{self.remote}</small></i>')
+        name_label.set_markup(f'<i><small>{self.remote_name}</small></i>')
         content_grid.attach(name_label, 0, 2, 1, 1)
 
         description_label = Gtk.Label()
@@ -216,6 +237,15 @@ class InfoDialog(Gtk.Dialog):
         url_button = Gtk.LinkButton.new_with_label(_('Homepage'))
         url_button.set_uri(url)
         content_grid.attach(url_button, 0, 4, 1, 1)
+    
+    def get_remote(self, remote_name):
+        return flatpak.remotes.remotes[self.option][self.remote_name]
+    
+    def on_switch_toggled(self, switch, state):
+        self.log.debug(
+            'Setting enabled state for %s to %s', self.remote_name, state
+        )
+        flatpak.remotes.remote_set_enabled(self.remote_name, state)
 
         self.show_all()
 
