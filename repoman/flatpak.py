@@ -188,7 +188,7 @@ class InfoDialog(Gtk.Dialog):
         
         self.disable_switch = Gtk.Switch()
         self.disable_switch.set_active(
-            flatpak.remotes.remotes[self.option][self.remote_name]
+            flatpak.remotes.remotes[self.option][self.remote_name]['enabled']
         )
         self.disable_switch.connect('state-set', self.on_switch_toggled)
         headerbar.pack_end(self.disable_switch)
@@ -205,7 +205,7 @@ class InfoDialog(Gtk.Dialog):
 
         remote_title = flatpak.remotes.remotes[self.option][self.remote_name]['title']
         description = flatpak.remotes.remotes[self.option][self.remote_name]['about']
-        url = flatpak.remotes.remotes[self.option][self.remote_name]['url']
+        url = flatpak.remotes.remotes[self.option][self.remote_name]['homepage']
 
         title_label = Gtk.Label()
         title_label.set_line_wrap(True)
@@ -228,6 +228,8 @@ class InfoDialog(Gtk.Dialog):
         url_button = Gtk.LinkButton.new_with_label(_('Homepage'))
         url_button.set_uri(url)
         content_grid.attach(url_button, 0, 4, 1, 1)
+
+        self.show_all()
     
     def get_remote(self, remote_name):
         return flatpak.remotes.remotes[self.option][self.remote_name]
@@ -237,8 +239,6 @@ class InfoDialog(Gtk.Dialog):
             'Setting enabled state for %s to %s', self.remote_name, state
         )
         flatpak.remotes.remote_set_enabled(self.remote_name, state)
-
-        self.show_all()
 
 class Flatpak(Gtk.Box):
 
