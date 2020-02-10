@@ -164,6 +164,7 @@ class InfoDialog(Gtk.Dialog):
         self.remote = remote
         self.option = option
         self.icon_tool = RemoteIcon(remote, option)
+        self.remote_data = flatpak.remotes.remotes[option][remote]
 
         settings = Gtk.Settings.get_default()
         header = settings.props.gtk_dialogs_use_header
@@ -175,6 +176,8 @@ class InfoDialog(Gtk.Dialog):
             use_header_bar=header
         )
         self.log = logging.getLogger('repoman.FPInfoDialog')
+
+        self.log.debug('Data for remote %s: %s', remote, self.remote_data)
 
         self.set_resizable(False)
 
@@ -201,6 +204,9 @@ class InfoDialog(Gtk.Dialog):
 
         self.icon = self.icon_tool.get_cached()
         self.icon_box.add(self.icon)
+        remote_title = self.remote_data['title']
+        description = self.remote_data['about']
+        url = self.remote_data['homepage']
 
         title_label = Gtk.Label()
         title_label.set_line_wrap(True)
@@ -219,17 +225,13 @@ class InfoDialog(Gtk.Dialog):
         description_label.set_width_chars(36)
         description_label.set_text(description)
         content_grid.attach(description_label, 0, 3, 1, 1)
-
-        self.show_all()
-
-        # This is currently broken, so we don't show the button. 
-        # It will require support in pyflatpak for getting the repo
-        # homepage.
+        
         url_button = Gtk.LinkButton.new_with_label(_('Homepage'))
         url_button.set_uri(url)
         content_grid.attach(url_button, 0, 4, 1, 1)
 
         self.get_latest_icon()
+        self.show_all()
 
     def get_latest_icon(self):
         if self.icon_tool.url:
@@ -256,7 +258,6 @@ class InfoDialog(Gtk.Dialog):
             self.icon.show()
             self.icon_box.add(self.icon)
             self.log.debug('Got latest %s icon', self.remote)
-
 
 class Flatpak(Gtk.Box):
 
