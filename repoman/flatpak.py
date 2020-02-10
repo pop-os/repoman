@@ -174,15 +174,12 @@ class InfoDialog(Gtk.Dialog):
         )
         self.log = logging.getLogger('repoman.FPInfoDialog')
 
-<<<<<<< HEAD
         self.log.debug('Data for remote %s: %s', remote, self.remote_data)
-=======
         remote_info = str(flatpak.remotes.remotes[self.option][self.remote_name])
         remote_info = remote_info.replace("', '", "'\n'")
         self.log.debug(
             'Creating Info page for %s: /n %s', self.remote_name, remote_info
         )
->>>>>>> Add in disable toggle
 
         self.set_resizable(False)
 
@@ -206,15 +203,9 @@ class InfoDialog(Gtk.Dialog):
         content_grid.set_row_spacing(6)
         content_area.add(content_grid)
 
-<<<<<<< HEAD
-        remote_title = self.remote_data['title']
-        description = self.remote_data['about']
-        url = self.remote_data['homepage']
-=======
         remote_title = flatpak.remotes.remotes[self.option][self.remote_name]['title']
         description = flatpak.remotes.remotes[self.option][self.remote_name]['about']
         url = flatpak.remotes.remotes[self.option][self.remote_name]['url']
->>>>>>> Add in disable toggle
 
         title_label = Gtk.Label()
         title_label.set_line_wrap(True)
