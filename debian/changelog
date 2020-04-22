@@ -1,8 +1,14 @@
-repoman (1.3.0) UNRELEASED; urgency=medium
+repoman (1.4.0) eoan; urgency=medium
+
+  * Sync version with cz
+
+ -- Ian Santopietro <ian@system76.com>  Wed, 22 Apr 2020 17:20:01 -0600
+
+repoman (1.3.0) eoan; urgency=medium
 
   * Add support for disabling remotes  
 
- -- Ian Santopietro <ian@system76.com>  Wed, 22 Apr 2020 17:14:02 -0600
+ -- Ian Santopietro <ian@system76.com>  Wed, 22 Apr 2020 17:19:32 -0600
 
 repoman (1.2.1) eoan; urgency=medium
 
