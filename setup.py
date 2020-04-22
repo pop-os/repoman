@@ -7,7 +7,7 @@ import sys
 
 setup(
     name = 'repoman',
-    version = '1.3.0',
+    version = '1.4.0',
     description = 'Easily manage software sources',
     url = 'https://github.com/pop-os/repoman',
     license = 'GNU GPL3',
