@@ -1,6 +1,9 @@
 repoman (1.4.0) eoan; urgency=medium
 
-  * Sync version with cz
+  * Monitor Flatpak for external configuration changes.
+  * Show a list of removed flatpakrefs when a remote is deleted.
+  * Show a list of installed in the info for each remote.
+  * Fetch and display icons from remotes.
 
  -- Ian Santopietro <ian@system76.com>  Wed, 22 Apr 2020 17:20:01 -0600
 
