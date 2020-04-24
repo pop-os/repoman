@@ -1,3 +1,9 @@
+repoman (1.2.2) bionic; urgency=medium
+
+  * Remove python-requests from dependencies
+
+ -- Jeremy Soller <jeremy@system76.com>  Fri, 24 Apr 2020 15:28:40 -0600
+
 repoman (1.2.1) eoan; urgency=medium
 
   * Refactor for easier development and better performance
