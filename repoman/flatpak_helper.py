@@ -25,7 +25,9 @@ from pathlib import Path
 from threading import Thread
 
 gi.require_version('Flatpak', '1.0')
-from gi.repository import GObject, Gio, Flatpak, GLib
+gi.require_version('Gtk', '3.0')
+gi.require_version('GdkPixbuf', '2.0')
+from gi.repository import GObject, Gio, Flatpak, GLib, GdkPixbuf, Gtk
 
 log = logging.getLogger('repoman.flatpak-helper')
 
@@ -67,6 +69,24 @@ def delete_remote(widget, name, option):
     remove_thread = RemoveThread(widget, name, option)
     remove_thread.start()
 
+def get_icon_cache_for_remote(name, option):
+    """ Gets the path to the cached icon for a remote.
+
+    Arguments:
+        name (str): The name of the remote to get the icon for.
+        option (str): Which installation the remote is on.
+    
+    Returns:
+        `Pathlib.Path` for the required path.
+    """
+    installation = get_installation_for_type(option)
+    remote = installation.get_remote_by_name(name)
+    installation_dir = installation.get_path().get_path()
+    cache_dir = Path(join(installation_dir, 'repo', 'icon_cache'))
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cache_icon = Path(join(cache_dir, f'{remote.get_name()}.svg'))
+    return cache_icon
+
 def get_installation_for_type(option):
     """ Gets the installation for the given type.
 
@@ -77,12 +97,40 @@ def get_installation_for_type(option):
         The requested :obj:`Flatpak.Installation`
     """
     log.debug('Getting %s Installation', option)
+
+    # We want to drop the caches for these installations in case they have been
+    # modified from some other source.
     if option.lower() == 'user':
         log.debug('User installation found.')
+        fp_user_inst.drop_caches()
         return fp_user_inst
     else:
         log.debug('System installation found.')
+        fp_sys_inst.drop_caches()
         return fp_sys_inst
+
+def get_installed_refs_from_remote(name, option):
+    """Get a list of refs installed from a remote.
+
+    Arguments:
+        name (str): The name of the remote to look on
+        option (str): Whether this is a `user` or `system` remote.
+    
+    Returns:
+        [`Flatpak.Remote`] The list of remotes.
+    """
+    installation = get_installation_for_type(option)
+    refs = []
+
+    for ref in installation.list_installed_refs_by_kind(Flatpak.RefKind.APP):
+        if ref.get_origin() == name:
+            refs.append(ref)
+
+    for ref in installation.list_installed_refs_by_kind(Flatpak.RefKind.RUNTIME):
+        if ref.get_origin() == name:
+            refs.append(ref)
+    
+    return refs
 
 def get_remotes(option):
     """ Get a list of remotes.
@@ -96,6 +144,39 @@ def get_remotes(option):
     log.debug('Fetching %s remotes', option)
     installation = get_installation_for_type(option)
     return installation.list_remotes()
+
+def get_image_from_pixbuf(pixbuf):
+    """Gets an image from the given pixbuf.
+
+    Arguments:
+        pixbuf (`GdkPixbuf.Pixbuf`): The pixbuf to get an image.
+    
+    Returns:
+        A `Gtk.Image` with the contents of the pixbuf.
+    """
+    image = Gtk.Image.new_from_pixbuf(pixbuf)
+    image.set_margin_top(12)
+    image.set_margin_bottom(12)
+    return image
+
+def get_icon_pixbuf(path):
+    """ Gets a pixbuf of an image from a given path.
+
+    Arguments:
+        path (`Pathlib.Path`): The path item of the image to get.
+    
+    Returns:
+        A `GdkPixbuf.Pixbuf` of the image at `path`.
+    """
+    try: 
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+            str(path), 64, -1, True
+        )
+        log.debug('Cached icon found')
+        return pixbuf
+    except GLib.GError:
+        log.debug('No cached icon found!')
+        return None
 
 def get_installed_refs_for_option(option):
     """ Lists all refs installed on the installation for option.
@@ -142,6 +223,7 @@ class RemoveThread(Thread):
         self.parent = parent
         self.remote = remote
         self.refs = list(self.populate_refs_on_remote(option))
+        self.log = logging.getLogger(f'repoman.remove-{remote}')
 
     def populate_refs_on_remote(self, option):
         for ref in get_installed_refs_for_option(option):
@@ -150,7 +232,10 @@ class RemoveThread(Thread):
     
     def run(self):
         installation = get_installation_for_type(self.option)
-        for ref in self.refs:
+        for ref in self.populate_refs_on_remote(self.option):
+            self.log.warning(
+                'Removing ref %s (%s)', ref.get_name(), ref.get_appdata_name()
+            )
             installation.uninstall(
                 ref.get_kind(),
                 ref.get_name(),
@@ -200,3 +285,49 @@ class AddThread(Thread):
                 message, 
                 "error"
             )
+
+class IconThread(Thread):
+
+    def __init__(self, dialog, name, option):
+        super().__init__()
+        self.dialog = dialog
+        self.name = name
+        self.option = option
+        self.log = logging.getLogger(f'repoman.{self.name}-icon')
+
+    def run(self):
+        installation = get_installation_for_type(self.option)
+        remote = installation.get_remote_by_name(self.name)
+        icon_url = remote.get_icon()
+
+        if not icon_url:
+            # No icon to fetch
+            self.log.debug('No icon for %s', self.name)
+            return
+        
+        self.log.debug('Getting icon for %s', self.name)
+        cache_icon = get_icon_cache_for_remote(self.name, self.option)
+
+        try:
+            _icon = Gio.File.new_for_uri(icon_url)
+            a, contents, b = _icon.load_contents()
+            with open(cache_icon, mode='w') as cache:
+                cache.write(contents.decode('UTF-8'))
+        
+        except GLib.Error as e:
+            self.log.warning('Could not load latest icon: %s', e.args)
+
+        pixbuf = get_icon_pixbuf(cache_icon)
+        
+        if pixbuf:
+            image = get_image_from_pixbuf(pixbuf)
+        
+        else:
+            image = Gtk.Image.new_from_icon_name(
+                'notfound',
+                Gtk.IconSize.SMALL_TOOLBAR
+            )
+            image.props.opacity = 0
+    
+        if self.dialog:
+            GLib.idle_add(self.dialog.set_remote_icon, image)

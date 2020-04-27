@@ -7,3 +7,4 @@ debian/files
 debian/xyz.isantop.repoman*
 debian/com.github*
 *~
+*.orig

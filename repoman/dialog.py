@@ -28,7 +28,10 @@ gettext.bindtextdomain('repoman', '/usr/share/repoman/po')
 gettext.textdomain("repoman")
 _ = gettext.gettext
 
-from . import flatpak_helper 
+try:
+    from . import flatpak_helper 
+except (ImportError, ValueError):
+    pass
 from .ppa import PPA
 
 class ErrorDialog(Gtk.Dialog):
@@ -103,7 +106,8 @@ class AddDialog(Gtk.Dialog):
         content_grid.attach(add_title, 0, 0, 1, 1)
 
         add_label = Gtk.Label(_("e.g. ppa:mirkobrombin/ppa"))
-        content_grid.attach(add_label, 0, 1, 1, 1)
+        if not self.flatpak:
+            content_grid.attach(add_label, 0, 1, 1, 1)
 
         self.repo_entry = Gtk.Entry()
         self.repo_entry.set_placeholder_text(_("Source Line"))
@@ -147,7 +151,6 @@ class DeleteDialog(Gtk.Dialog):
     def __init__(self, parent, title, flatpak=False, refs=None):
 
         settings = Gtk.Settings.get_default()
-
         header = settings.props.gtk_dialogs_use_header
 
         Gtk.Dialog.__init__(self, _(f'Remove {title}'), parent, 0,
@@ -156,6 +159,10 @@ class DeleteDialog(Gtk.Dialog):
                              modal=1, use_header_bar=header)
 
         self.log = logging.getLogger("repoman.DeleteDialog")
+
+        self.expanded_height = 400
+        self.expanded_width = 200
+        self.set_resizable(False)
 
         content_area = self.get_content_area()
 
@@ -206,6 +213,64 @@ class DeleteDialog(Gtk.Dialog):
         )
 
         self.show_all()
+
+        if flatpak and refs:
+            delete_explain_text = delete_explain.get_text()
+            delete_explain_text += _(
+                 ' All flatpaks you\'ve installed from this source will '
+                 'be removed.'
+            )
+            delete_explain.set_text(delete_explain_text)
+
+            removed_expander = Gtk.Expander.new(_('Removed Flatpaks'))
+            removed_expander.connect('notify::expanded', self.show_hide_removed)
+            content_grid.attach(removed_expander, 1, 2, 1, 1)
+
+            self.removed_revealer = Gtk.Revealer()
+            self.removed_revealer.set_margin_start(18)
+            self.removed_revealer.set_transition_type(
+                Gtk.RevealerTransitionType.CROSSFADE
+            )
+            content_grid.attach(self.removed_revealer, 1, 3, 1, 1)
+
+            list_grid = Gtk.Grid()
+            self.removed_revealer.add(list_grid)
+
+            removed_label = Gtk.Label.new(
+                _('The following Flatpaks will be removed with this source:')
+            )
+            list_grid.attach(removed_label, 0, 0, 1, 1)
+            list_window = Gtk.ScrolledWindow()
+            list_window.set_vexpand(True)
+            list_window.set_hexpand(True)
+            list_grid.attach(list_window, 0, 1, 1, 1)
+            
+            removed_view = Gtk.TextView()
+            removed_view.set_editable(False)
+            list_window.add(removed_view)
+
+            removed_list = removed_view.get_buffer()
+            removed_text = ''
+            for ref in refs:
+                if ref.get_appdata_name():
+                    removed_text += f'{ref.get_appdata_name()} ({ref.get_name()})\n'
+            for ref in refs:
+                if not ref.get_appdata_name():
+                    removed_text += f'{ref.get_name()}\n'
+            removed_list.set_text(removed_text)
+            
+            self.show_all()
+    
+    def show_hide_removed(self, expander, data=None):
+        self.removed_revealer.props.reveal_child = expander.get_expanded()
+        if expander.get_expanded():
+            self.resize(self.expanded_width, self.expanded_height)
+            self.set_resizable(True)
+        else:
+            self.expanded_height = self.get_allocated_height() - 99
+            self.expanded_width = self.get_allocated_width() - 52
+            self.resize(self.expanded_width, 1)
+            self.set_resizable(False)
 
 class EditDialog(Gtk.Dialog):
 
@@ -352,7 +417,9 @@ class InfoDialog(Gtk.Dialog):
         )
         self.log = logging.getLogger(f'repoman.info-{name}')
 
-        self.set_resizable(False)
+        self.expanded_height = 350
+        self.expanded_width = 350
+        self.set_default_size(350, 350)
 
         content_area = self.get_content_area()
         headerbar = self.get_header_bar()
@@ -363,7 +430,7 @@ class InfoDialog(Gtk.Dialog):
         headerbar.pack_end(disable_switch)
 
         content_grid = Gtk.Grid()
-        content_grid.set_halign(Gtk.Align.CENTER)
+        content_grid.set_halign(Gtk.Align.FILL)
         content_grid.set_margin_top(24)
         content_grid.set_margin_bottom(24)
         content_grid.set_margin_start(24)
@@ -371,6 +438,24 @@ class InfoDialog(Gtk.Dialog):
         content_grid.set_column_spacing(12)
         content_grid.set_row_spacing(6)
         content_area.add(content_grid)
+
+        self.icon_box = Gtk.Box()
+        self.icon_box.set_halign(Gtk.Align.CENTER)
+        content_grid.attach(self.icon_box, 0, 0, 1, 1)
+
+        self.log.debug('Trying to get icon for %s', name)
+        cached_icon = flatpak_helper.get_icon_cache_for_remote(name, option)
+        pixbuf = flatpak_helper.get_icon_pixbuf(cached_icon)
+        
+        if pixbuf:
+            self.icon = flatpak_helper.get_image_from_pixbuf(pixbuf)
+            self.icon_box.add(self.icon)
+        else:
+            self.icon = Gtk.Image.new_from_icon_name(
+                'notfound',
+                Gtk.IconSize.SMALL_TOOLBAR
+            )
+            self.icon.props.opacity = 0
 
         title_label = Gtk.Label()
         title_label.set_line_wrap(True)
@@ -382,6 +467,7 @@ class InfoDialog(Gtk.Dialog):
         content_grid.attach(name_label, 0, 2, 1, 1)
 
         description_label = Gtk.Label()
+        description_label.set_hexpand(True)
         description_label.set_margin_top(18)
         description_label.set_margin_bottom(12)
         description_label.set_line_wrap(True)
@@ -394,8 +480,81 @@ class InfoDialog(Gtk.Dialog):
             url_button = Gtk.LinkButton.new_with_label(_('Homepage'))
             url_button.set_uri(url)
             content_grid.attach(url_button, 0, 4, 1, 1)
+        
+        installed_refs = flatpak_helper.get_installed_refs_from_remote(
+            name, option
+        )
+        if installed_refs:
+            refs_expander = Gtk.Expander.new(_('Installed Flatpaks'))
+            refs_expander.connect('notify::expanded', self.show_hide_removed)
+            content_grid.attach(refs_expander, 0, 5, 1, 1)
+
+            self.refs_revealer = Gtk.Revealer()
+            self.refs_revealer.set_margin_start(18)
+            self.refs_revealer.set_hexpand(True)
+            self.refs_revealer.set_transition_type(
+                Gtk.RevealerTransitionType.CROSSFADE
+            )
+            content_grid.attach(self.refs_revealer, 0, 6, 1, 1)
+
+            list_grid = Gtk.Grid()
+            self.refs_revealer.add(list_grid)
+
+            installed_label = Gtk.Label.new(
+                _(f'The following Flatpaks are currently installed from {title}')
+            )
+
+            installed_label.set_line_wrap(True)
+            list_grid.attach(installed_label, 0, 0, 1, 1)
+            list_window = Gtk.ScrolledWindow()
+            list_window.set_vexpand(True)
+            list_window.set_hexpand(True)
+            list_grid.attach(list_window, 0, 1, 1, 1)
+            
+            refs_view = Gtk.TextView()
+            refs_view.set_editable(False)
+            list_window.add(refs_view)
+
+            refs_buff = refs_view.get_buffer()
+            refs_list = 'Applications: \n'
+            for ref in installed_refs:
+                if ref.get_kind() == flatpak_helper.Flatpak.RefKind.APP:
+                    if ref.get_appdata_name():
+                        refs_list += f'{ref.get_appdata_name()}\n'
+                    else: 
+                        refs_list += f'{ref.get_name()}\n'
+            
+            refs_list += '\nRuntimes:\n'
+            for ref in installed_refs:
+                if ref.get_kind() == flatpak_helper.Flatpak.RefKind.RUNTIME:
+                    refs_list += f'{ref.get_name()}\n'
+            refs_buff.set_text(refs_list)
 
         self.show_all()
+
+	icon_thread = flatpak_helper.IconThread(self, name, option)
+        icon_thread.start()
+    
+    def set_remote_icon(self, image):
+        """ Set's the remote icon to a given Gtk.Image
+
+        Arguments:
+            image (`Gtk.Image`): The image to set.
+        """
+        self.icon.destroy()
+        self.icon = image
+        self.icon.show()
+        self.icon_box.add(self.icon)
+        self.log.debug('Got latest icon')    
+
+    def show_hide_removed(self, expander, data=None):
+        self.refs_revealer.props.reveal_child = expander.get_expanded()
+        if expander.get_expanded():
+            self.resize(self.expanded_width, self.expanded_height)
+        else:
+            self.expanded_height = self.get_allocated_height() - 99
+            self.expanded_width = self.get_allocated_width() - 52
+            self.resize(self.expanded_width, 1)
         
     def on_switch_toggled(self, switch, state):
         self.log.debug('Setting disabled to %s', not state)
