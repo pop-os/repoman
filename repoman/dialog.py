@@ -532,7 +532,7 @@ class InfoDialog(Gtk.Dialog):
 
         self.show_all()
 
-	icon_thread = flatpak_helper.IconThread(self, name, option)
+        icon_thread = flatpak_helper.IconThread(self, name, option)
         icon_thread.start()
     
     def set_remote_icon(self, image):
