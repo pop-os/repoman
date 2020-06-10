@@ -61,7 +61,7 @@ class List(Gtk.Box):
         Gtk.StyleContext.add_class(sources_title.get_style_context(), "h2")
         self.content_grid.attach(sources_title, 0, 0, 1, 1)
 
-        sources_label = Gtk.Label(_("These sources are for software provided by a third party. They may present a security risk or can cause system instability. Only add sources that you trust."))
+        sources_label = Gtk.Label(_("These sources are for software provided by a third party. They may present a security risk or cause system instability. Only add sources that you trust."))
         sources_label.set_line_wrap(True)
         sources_label.set_justify(Gtk.Justification.FILL)
         sources_label.set_halign(Gtk.Align.START)
@@ -109,7 +109,7 @@ class List(Gtk.Box):
         self.delete_button.set_icon_name("edit-delete-symbolic")
         Gtk.StyleContext.add_class(self.delete_button.get_style_context(),
                                    "image-button")
-        self.delete_button.set_tooltip_text(_("Modify Selected Source"))
+        self.delete_button.set_tooltip_text(_("Delete Selected Source"))
         self.delete_button.connect("clicked", self.on_delete_button_clicked)
 
         action_bar = Gtk.Toolbar()
