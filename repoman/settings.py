@@ -60,7 +60,7 @@ class Settings(Gtk.Box):
         Gtk.StyleContext.add_class(sources_title.get_style_context(), "h2")
         settings_grid.attach(sources_title, 0, 0, 1, 1)
 
-        sources_label = Gtk.Label(_("Official sources are those provided by %s and its developers. It's recommended to leave these sources enabled.") % self.os_name)
+        sources_label = Gtk.Label(_("Official sources are provided by %s and its developers. It's recommended to leave these sources enabled.") % self.os_name)
         sources_label.set_line_wrap(True)
         sources_label.set_justify(Gtk.Justification.FILL)
         sources_label.set_halign(Gtk.Align.START)
@@ -87,7 +87,7 @@ class Settings(Gtk.Box):
         self.developer_grid.set_spacing(12)
         developer_options.add(self.developer_grid)
 
-        developer_label = Gtk.Label(_("These options are those which are primarily of interest to developers."))
+        developer_label = Gtk.Label(_("These options are primarily of interest to developers."))
         developer_label.set_line_wrap(True)
         developer_label.set_halign(Gtk.Align.START)
         developer_label.set_margin_start(5)
