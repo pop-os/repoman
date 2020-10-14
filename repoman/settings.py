@@ -107,17 +107,33 @@ class Settings(Gtk.Box):
         Gtk.StyleContext.add_class(self.mirror_box.get_style_context(), 'linked')
         settings_grid.attach(self.mirror_box, 0, 2, 1, 1)
 
+        if self.system_repo:
+            if self.system_repo.default_mirror:
+                reset_mirrors_button = Gtk.Button()
+                reset_mirrors_button.set_label(_('Reset Mirrors to Defaults'))
+                reset_mirrors_button.set_halign(Gtk.Align.END)
+                reset_mirrors_button.set_margin_top(6)
+                Gtk.StyleContext.add_class(
+                    reset_mirrors_button.get_style_context(),
+                    'destructive-action'
+                )
+                reset_mirrors_button.connect(
+                    'clicked',
+                    self.on_reset_mirror_button_clicked
+                )
+                settings_grid.attach(reset_mirrors_button, 0, 3, 1, 1)
+
         self.checks_grid = Gtk.VBox()
         self.checks_grid.set_margin_left(12)
         self.checks_grid.set_margin_top(24)
         self.checks_grid.set_margin_right(12)
         self.checks_grid.set_margin_bottom(12)
         self.checks_grid.set_spacing(12)
-        settings_grid.attach(self.checks_grid, 0, 3, 1, 1)
+        settings_grid.attach(self.checks_grid, 0, 4, 1, 1)
 
         developer_options = Gtk.Expander()
         developer_options.set_label(_('Developer Options (Advanced)'))
-        settings_grid.attach(developer_options, 0, 4, 1, 1)
+        settings_grid.attach(developer_options, 0, 5, 1, 1)
 
         self.developer_grid = Gtk.VBox()
         self.developer_grid.set_margin_left(12)
@@ -273,15 +289,15 @@ class Settings(Gtk.Box):
         if entry.get_icon_name(e_pos):
             if entry.uri in self.system_repo.uris:
                 uris.remove(entry.uri)
-            
+
             new_entry = not entry.get_text() in self.system_repo.uris
             action_edit = entry.get_icon_name(e_pos) == 'document-save-symbolic'
             if new_entry and action_edit:
                 uris.append(entry.get_text())
-            
+
             self.system_repo.uris = uris
             self.system_repo.save_to_disk()
-                
+
 
     def get_new_switch(self, component, description=None):
         """ Creates a Box with a new switch and a description.
@@ -414,3 +430,8 @@ class Settings(Gtk.Box):
             self.show_source_code()
             self.show_proposed()
             self.set_mirrors()
+
+    def on_reset_mirror_button_clicked(self, button):
+        self.log.warning('Resetting mirrors to default values.')
+        self.system_repo.set_default_mirror()
+        self.system_repo.save_to_disk()
