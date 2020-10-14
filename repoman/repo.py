@@ -21,6 +21,7 @@
 import logging
 import subprocess
 import threading
+from urllib.parse import urlparse
 
 import dbus
 import gi
@@ -61,6 +62,33 @@ def get_system_repo():
     """Get a repo for the system sources. """
     repo = repolib.SystemSource()
     return repo
+
+def url_validator(url):
+    """ Validate a url and tell if it's good or not.
+
+    FIXME: We should use the validator provided by Repolib. Change this once 
+    that one is merged.
+
+    Arguments:
+        url (str): The URL to validate.
+
+    Returns:
+        `True` if `url` is not malformed, otherwise `False`.
+    """
+    try:
+        # pylint: disable=no-else-return,bare-except
+        # A) We want to return false if the URL doesn't contain those parts
+        # B) We need this to not throw any exceptions, regardless what they are
+        result = urlparse(url)
+        if result.netloc:
+            # We need at least a scheme and a netlocation/hostname or...
+            return all([result.scheme, result.netloc])
+        elif result.path:
+            # ...a scheme and a path (this allows file:/// URIs which are valid)
+            return all([result.scheme, result.path])
+        return False
+    except:
+        return False
 
 def get_repo_for_name(name):
     """ Get a repo from a given name.

@@ -28,7 +28,8 @@ import gettext
 gettext.bindtextdomain('repoman', '/usr/share/repoman/po')
 gettext.textdomain('repoman')
 _ = gettext.gettext
-e_pos = Gtk.EntryIconPosition.SECONDARY
+prime_pos = Gtk.EntryIconPosition.PRIMARY
+sec_pos = Gtk.EntryIconPosition.SECONDARY
 
 class Settings(Gtk.Box):
     repo_descriptions = {
@@ -245,7 +246,9 @@ class Settings(Gtk.Box):
         )
         for signal in ['icon-release', 'activate']:
             new_mirror_entry.connect(signal, self.do_entry_add)
+        new_mirror_entry.set_icon_from_icon_name(prime_pos, '')
         self.mirror_box.pack_end(new_mirror_entry, True, True, 0)
+        new_mirror_entry.connect('changed', self.do_new_entry_changed)
         new_mirror_entry.show()
 
         for uri in self.system_repo.uris:
@@ -257,28 +260,43 @@ class Settings(Gtk.Box):
             if len(self.system_repo.uris) == 1:
                 # Don't allow removing the last mirror
                 self.log.debug('Mirror %s is the only mirror', uri)
-                mirror_entry.set_icon_from_icon_name(e_pos, '')
+                mirror_entry.set_icon_from_icon_name(sec_pos, '')
             self.mirror_box.pack_start(mirror_entry, True, True, 0)
             mirror_entry.show()
 
     def do_entry_add(self, entry, *args, **kwargs):
         """ :icon-release: signal handler for the new_mirror_entry."""
-        new_uri = entry.get_text()
-        uris = self.system_repo.uris
-        if not new_uri in uris:
-            uris.append(new_uri)
-        self.system_repo.uris = uris
-        self.system_repo.save_to_disk()
+        if entry.get_icon_name(prime_pos) == 'selection-checked-symbolic':
+            new_uri = entry.get_text()
+            uris = self.system_repo.uris
+            if not new_uri in uris:
+                uris.append(new_uri)
+            self.system_repo.uris = uris
+            self.system_repo.save_to_disk()
+    
+    def do_new_entry_changed(self, entry):
+        """ :changed: signal handler for the new-mirror entry."""
+        if entry.get_text():
+            if repo.url_validator(entry.get_text()):
+                entry.set_icon_from_icon_name(prime_pos, 'selection-checked-symbolic')
+                entry.set_icon_sensitive(sec_pos, True)
+                entry.set_icon_activatable(sec_pos, True)
+            else:
+                entry.set_icon_from_icon_name(prime_pos, 'dialog-error-symbolic')
+                entry.set_icon_sensitive(sec_pos, False)
+                entry.set_icon_activatable(sec_pos, False)
+        else:
+            entry.set_icon_from_icon_name(prime_pos, '')
 
     def do_entry_changed(self, entry):
         """ :changed: signal handler for mirror_entry items. """
         if entry.get_text() != entry.uri:
-            entry.set_icon_from_icon_name(e_pos, 'document-save-symbolic')
+            entry.set_icon_from_icon_name(sec_pos, 'document-save-symbolic')
         else:
             if len(self.system_repo.uris) == 1:
-                entry.set_icon_from_icon_name(e_pos, '')
+                entry.set_icon_from_icon_name(sec_pos, '')
             else:
-                entry.set_icon_from_icon_name(e_pos, 'edit-delete-symbolic')
+                entry.set_icon_from_icon_name(sec_pos, 'edit-delete-symbolic')
 
     def do_entry_delete(self, entry, *args, **kwargs):
         """ :icon-release: handler for mirror_entry items.
@@ -286,12 +304,12 @@ class Settings(Gtk.Box):
         Used to remove existing entries from the list.
         """
         uris = self.system_repo.uris
-        if entry.get_icon_name(e_pos):
+        if entry.get_icon_name(sec_pos):
             if entry.uri in self.system_repo.uris:
                 uris.remove(entry.uri)
 
             new_entry = not entry.get_text() in self.system_repo.uris
-            action_edit = entry.get_icon_name(e_pos) == 'document-save-symbolic'
+            action_edit = entry.get_icon_name(sec_pos) == 'document-save-symbolic'
             if new_entry and action_edit:
                 uris.append(entry.get_text())
 
