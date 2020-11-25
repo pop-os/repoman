@@ -29,10 +29,7 @@ from gi.repository import Gtk, GObject, GLib, Gio, Pango
 from .dialog import ErrorDialog, AddDialog, DeleteDialog, InfoDialog
 from . import flatpak_helper as helper
 
-import gettext
-gettext.bindtextdomain('repoman', '/usr/share/repoman/po')
-gettext.textdomain("repoman")
-_ = gettext.gettext
+from gettext import gettext as _ 
 
 class Flatpak(Gtk.Box):
 

@@ -40,51 +40,42 @@ Things to check for correct function:
   1. Click "Add" (+) button at bottom.
      * "Add Source" dialog appears
      * "Add" button is grayed out.
-  2. Add extra repository (e.g. `ppa:kernelstub/daily`)
+  2. Add extra repository (e.g. `ppa:system76/proposed`)
      * "Add" button is enabled when valid ppa is typed in.
      * Repository is added to list after breif update
-  3. Double-click repository; check that Edit Dialog opens; close it.
-     * "Modify Source" button opens.
+  3. Select repository and click the modify button (pencil icon); check that Modify Source dialog opens.
+     * "Modify Source" dialog opens.
      * "Cancel" button in top left.
      * Green "Save" button in top right.
-     * "Remove Source" button, red, is at bottom left.
   4. Set "Version" to `xenial`
   5. Set "Type" to `Source Code`
   6. Click "Save".
      * Dialog closes
      * Repository is updated in list after a short delay.
-  7. Click same repository.
-  8. Click "Edit" (pencil) button 
+  7. Click same repository and click modify button.
      * "Modify Source" opens again.
-  9. Change "Version" to `xebiak`
-  10. Click "Save"
+  8. Change "Version" to `xebiak`
+  9. Click "Save"
       * Repository is updated after delay.
       * Error message appears: "Does not have a Release File"
-  11. Click Close
-  12. Double-click same repository
+  10. Click Close
+  11. Select same repository and click modify
       * "Modify Source" opens again.
-  13. Change "Version" to xenial
-  14. Turn off "Enabled" Switch
-  15. Click "Save"
+  12. Change "Version" to xenial
+  13. Turn off "Enabled" Switch
+  14. Click "Save"
       * Repository is updated and moved to disabled section below.
       * Repository is not bold
       * "_(disabled)_" is appended to end of repository
-  16. Double-click same repository
-      * "Modify Source" opens again.
-  17. Click "Remove source"
+  15. Select same repository and click the remove button
       * "Remove Source" confirmation dialog opens.
       * "Cancel button" in top left
       * Red "Remove" button in top right.
-  18. Click "Remove"
+  16. Click "Remove"
       * Repository disappears from list after short delay.
-  19. Double-Click "Pop-OS" Repository.
-      * "Modify Source" opens again.
-  20. Click "Remove Source"
+  17. Select "Pop-OS" Repository and click the remove button
       * "Remove Source" dialog opens again.
-  21. Click "Cancel"
+  18. Click "Cancel"
       * "Remove Source" dialog closes.
-      * "Modify Source" dialog remains open.
-  22. Click "Cancel"
-      * "Modify Source" dialog closes.
       * "Pop-OS" repository remains in list.
   

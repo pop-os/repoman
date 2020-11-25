@@ -25,34 +25,43 @@ from gi.repository import Gtk
 from .settings import Settings
 from .updates import Updates
 from .list import List
+from . import repo
 try:
     from .flatpak import Flatpak
 except (ImportError, ValueError):
     Flatpak = False
-import gettext
-gettext.bindtextdomain('repoman', '/usr/share/repoman/po')
-gettext.textdomain("repoman")
-_ = gettext.gettext
+
+from gettext import gettext as _ 
 
 class Stack(Gtk.Box):
 
     def __init__(self, parent):
         Gtk.Box.__init__(self, orientation=Gtk.Orientation.VERTICAL, spacing=6)
         self.parent = parent
+        try:
+            self.system_repo = repo.get_system_repo()
+        except:
+            self.system_repo = None
+        self.sources = {}
+        self.errors = {}
+        self.sources, self.errors = repo.get_all_sources()
 
         self.stack = Gtk.Stack()
         self.stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
         self.stack.set_transition_duration(300)
 
         self.setting = Settings(self)
+        self.stack.add_titled(self.setting, "settings", _("Settings"))
+        
         self.updates = Updates(self)
+        self.stack.add_titled(self.updates, "updates", _("Updates"))
+        
         self.list_all = List(self)
+        self.stack.add_titled(self.list_all, "list", _("Extra Sources"))
+        
         if Flatpak:
             self.flatpak = Flatpak(self)
 
-        self.stack.add_titled(self.setting, "settings", _("Settings"))
-        self.stack.add_titled(self.updates, "updates", _("Updates"))
-        self.stack.add_titled(self.list_all, "list", _("Extra Sources"))
         if Flatpak:
             self.stack.add_titled(self.flatpak, "flatpak", _("Flatpak"))
 

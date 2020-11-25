@@ -20,6 +20,8 @@
 '''
 import logging
 import sys
+import gettext
+import locale
 
 try:
     from systemd.journal import JournalHandler
@@ -42,6 +44,11 @@ if JournalHandler:
     journald_log.setFormatter(formatter)
     log.addHandler(journald_log)
     log.info('Setup journald logging')
+
+gettext.bindtextdomain('repoman', '/usr/share/locale')
+gettext.textdomain('repoman')
+locale.bindtextdomain('repoman', '/usr/share/locale')
+locale.textdomain('repoman')
 
 log.setLevel(logging.DEBUG)
 

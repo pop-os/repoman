@@ -22,6 +22,8 @@
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GLib
+
+from .dialog import ErrorDialog
 from .headerbar import Headerbar
 from .stack import Stack
 
@@ -29,6 +31,11 @@ class Window(Gtk.Window):
 
     def __init__(self):
         Gtk.Window.__init__(self)
+
+        self.set_position(Gtk.WindowPosition.CENTER)
+        self.set_default_size(700, 400)
+
+        self.err_dialog = None
 
         self.hbar = Headerbar(self)
         self.set_titlebar(self.hbar)
@@ -47,4 +54,33 @@ class Window(Gtk.Window):
         self.context = Gtk.StyleContext()
         self.context.add_provider_for_screen(self.screen, self.css_provider,
           Gtk.STYLE_PROVIDER_PRIORITY_USER)
-
+        
+        self.show_all()
+        
+        # Show an error dialog to inform the user about source errors.
+        if self.stack.errors:
+            self.get_repos_error_dialog()
+            self.err_dialog.run()
+            self.err_dialog.destroy()
+    
+    def get_repos_error_dialog(self):
+        err_string = 'The following source files had errors and were omitted:\n'
+        for file in self.stack.errors:
+            err_string += f'    {file}\n'
+        err_string += '\nRun '
+        err_string += (
+            '<span '
+            'font-family="monospace" '
+            'background="#333333" '
+            'foreground="white" '
+            '> apt-manage -b </span> '
+        )
+        err_string += 'for more information.'
+        self.err_dialog = ErrorDialog(
+            self,
+            'Source File Errors',
+            'dialog-warning',
+            'Some sources contained errors',
+            err_string
+        )
+        self.err_dialog.set_position(Gtk.WindowPosition.CENTER_ON_PARENT)

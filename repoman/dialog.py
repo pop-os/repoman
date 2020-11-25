@@ -23,26 +23,26 @@ import logging
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-import gettext
-gettext.bindtextdomain('repoman', '/usr/share/repoman/po')
-gettext.textdomain("repoman")
-_ = gettext.gettext
+ 
+from gettext import gettext as _ 
 
 try:
     from . import flatpak_helper 
 except (ImportError, ValueError):
     pass
-from .ppa import PPA
+from . import repo
+
+settings = Gtk.Settings.get_default()
+header = settings.props.gtk_dialogs_use_header
 
 class ErrorDialog(Gtk.Dialog):
 
     def __init__(self, parent, dialog_title, dialog_icon,
                  message_title, message_text):
-        settings = Gtk.Settings.get_default()
-        header = settings.props.gtk_dialogs_use_header
                  
         super().__init__(use_header_bar=header, modal=1)
         self.set_deletable(False)
+        self.set_transient_for(parent)
 
         self.log = logging.getLogger("repoman.ErrorDialog")
         
@@ -65,7 +65,8 @@ class ErrorDialog(Gtk.Dialog):
 
         dialog_label = Gtk.Label()
         dialog_label.set_markup(f'<b>{message_title}</b>')
-        dialog_message = Gtk.Label(message_text)
+        dialog_message = Gtk.Label()
+        dialog_message.set_markup(message_text)
         content_grid.attach(dialog_label, 1, 0, 1, 1)
         content_grid.attach(dialog_message, 1, 1, 1, 1)
 
@@ -76,10 +77,6 @@ class AddDialog(Gtk.Dialog):
     ppa_name = False
 
     def __init__(self, parent, flatpak=False):
-
-        settings = Gtk.Settings.get_default()
-        header = settings.props.gtk_dialogs_use_header
-
         Gtk.Dialog.__init__(self, _("Add Source"), parent, 0,
                             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                              Gtk.STOCK_ADD, Gtk.ResponseType.OK),
@@ -87,7 +84,6 @@ class AddDialog(Gtk.Dialog):
 
         self.log = logging.getLogger("repoman.AddDialog")
         self.flatpak = flatpak
-        self.ppa = PPA(parent)
 
         content_area = self.get_content_area()
 
@@ -101,18 +97,33 @@ class AddDialog(Gtk.Dialog):
         content_grid.set_hexpand(True)
         content_area.add(content_grid)
 
+        self.title_spinner = Gtk.Stack()
+        self.title_spinner.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
+        self.title_spinner.set_transition_duration(200)
+        self.title_spinner.set_homogeneous(True)
+        self.title_spinner.set_halign(Gtk.Align.CENTER)
+        content_grid.attach(self.title_spinner, 0, 0, 1, 1)
+
+        add_grid = Gtk.Grid()
+
         add_title = Gtk.Label(_("Enter Source Details"))
         Gtk.StyleContext.add_class(add_title.get_style_context(), "h2")
-        content_grid.attach(add_title, 0, 0, 1, 1)
+        add_grid.attach(add_title, 0, 0, 1, 1)
 
         add_label = Gtk.Label(_("e.g. ppa:mirkobrombin/ppa"))
         if not self.flatpak:
-            content_grid.attach(add_label, 0, 1, 1, 1)
+            add_grid.attach(add_label, 0, 1, 1, 1)
+        
+        self.title_spinner.add_named(add_grid, 'title')
+
+        self.spinner = Gtk.Spinner()
+        self.spinner.stop()
+        self.title_spinner.add_named(self.spinner, 'spinner')
 
         self.repo_entry = Gtk.Entry()
         self.repo_entry.set_placeholder_text(_("Source Line"))
         self.repo_entry.set_activates_default(True)
-        self.repo_entry.connect(_("changed"), self.on_entry_changed)
+        self.repo_entry.connect("changed", self.on_entry_changed)
         self.repo_entry.set_width_chars(50)
         self.repo_entry.set_margin_top(12)
         content_grid.attach(self.repo_entry, 0, 2, 1, 1)
@@ -136,24 +147,52 @@ class AddDialog(Gtk.Dialog):
             entry_valid = flatpak_helper.validate_flatpakrepo(entry_text)
         
         else:
-            entry_valid = self.ppa.validate(entry_text)
+            entry_valid = repo.validate(entry_text)
+        
+        entry_isppa = entry_text.startswith('ppa')
+        entry_isdeb = entry_text.startswith('deb')
+
+        # If we're dealing with a plain URL, it can't have spaces
+        if not entry_isppa and not entry_isdeb:
+            uri = entry_text.split()
+            if len(uri) != 1:
+                entry_valid = False
+        
+        # deb lines must have at least three elements (type, URI, suite)
+        if entry_isdeb:
+            line = entry_text.split()
+            if len(line) < 3:
+                entry_valid = False
 
         # Set the add button's sensitivity based on the results of validation.
         try:
             self.add_button.set_sensitive(entry_valid)
         except TypeError:
             pass
+    
+    def set_busy(self):
+        self.spinner.start()
+        self.title_spinner.set_visible_child_name('spinner')
+        self.set_sensitive(False)
+
+    def show_error(self, exc):
+        self.log.error(_('Could not add source: %s'), self.repo_entry.get_text())
+        err_dialog = repo.get_error_messagedialog(
+            self,
+            _('Could not add source'),
+            exc,
+            _('{} could not be added').format(self.repo_entry.get_text())
+        )
+        err_dialog.run()
+        err_dialog.destroy()
 
 class DeleteDialog(Gtk.Dialog):
 
     ppa_name = False
 
     def __init__(self, parent, title, flatpak=False, refs=None):
-
-        settings = Gtk.Settings.get_default()
-        header = settings.props.gtk_dialogs_use_header
-
-        Gtk.Dialog.__init__(self, _(f'Remove {title}'), parent, 0,
+        Gtk.Dialog.__init__(self, _('Remove {}').format(title), 
+                            parent, 0,
                             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                              Gtk.STOCK_REMOVE, Gtk.ResponseType.OK),
                              modal=1, use_header_bar=header)
@@ -276,20 +315,10 @@ class EditDialog(Gtk.Dialog):
 
     ppa_name = False
 
-    def __init__(self,
-                 parent,
-                 repo_disabled,
-                 repo_type,
-                 repo_uri,
-                 repo_version,
-                 repo_component,
-                 repo_archs,
-                 repo_whole):
-
-        self.repo_whole = repo_whole
-
-        settings = Gtk.Settings.get_default()
-        header = settings.props.gtk_dialogs_use_header
+    def __init__(self, parent, source):
+        self.source = source
+        # Ensure the source is fully up to date.
+        self.source.load_from_file()
 
         Gtk.Dialog.__init__(self, _("Modify Source"), parent, 0,
                             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
@@ -298,7 +327,6 @@ class EditDialog(Gtk.Dialog):
 
         self.log = logging.getLogger("repoman.EditDialog")
 
-        self.ppa = PPA(self)
         self.parent = parent
 
         self.props.resizable = False
@@ -315,51 +343,66 @@ class EditDialog(Gtk.Dialog):
         content_grid.set_halign(Gtk.Align.CENTER)
         content_area.add(content_grid)
 
-        type_label = Gtk.Label(_("Type:"))
+        name_label = Gtk.Label.new(_('Name'))
+        name_label.set_halign(Gtk.Align.END)
+        type_label = Gtk.Label(_("Source Code"))
         type_label.set_halign(Gtk.Align.END)
-        uri_label = Gtk.Label(_("URI:"))
+        uri_label = Gtk.Label(_("URIs"))
         uri_label.set_halign(Gtk.Align.END)
-        version_label = Gtk.Label(_("Version:"))
+        version_label = Gtk.Label(_("Version"))
         version_label.set_halign(Gtk.Align.END)
-        component_label = Gtk.Label(_("Component:"))
+        component_label = Gtk.Label(_("Components"))
         component_label.set_halign(Gtk.Align.END)
-        enabled_label = Gtk.Label(_("Enabled:"))
+        enabled_label = Gtk.Label(_("Enabled"))
         enabled_label.set_halign(Gtk.Align.END)
-        content_grid.attach(type_label, 0, 0, 1, 1)
-        content_grid.attach(uri_label, 0, 1, 1, 1)
-        content_grid.attach(version_label, 0, 2, 1, 1)
-        content_grid.attach(component_label, 0, 3, 1, 1)
-        content_grid.attach(enabled_label, 0, 4, 1, 1)
+        content_grid.attach(name_label, 0, 0, 1, 1)
+        content_grid.attach(type_label, 0, 1, 1, 1)
+        content_grid.attach(uri_label, 0, 2, 1, 1)
+        content_grid.attach(version_label, 0, 3, 1, 1)
+        content_grid.attach(component_label, 0, 4, 1, 1)
+        content_grid.attach(enabled_label, 0, 5, 1, 1)
 
-        self.type_box = Gtk.ComboBoxText()
-        self.type_box.append("deb", _("Binary"))
-        self.type_box.append("deb-src", _("Source code"))
-        self.type_box.set_active_id(repo_type)
-        content_grid.attach(self.type_box, 1, 0, 1, 1)
+        self.name_entry = Gtk.Entry()
+        self.name_entry.set_placeholder_text(_('Name'))
+        self.name_entry.set_text(self.source['X-Repolib-Name'])
+        self.name_entry.set_activates_default(False)
+        self.name_entry.set_width_chars(40)
+        self.name_entry.connect('changed', self.on_entry_changed, 'X-Repolib-Name')
+        content_grid.attach(self.name_entry, 1, 0, 1, 1)
+
+        self.source_switch = Gtk.Switch()
+        self.source_switch.set_halign(Gtk.Align.START)
+        self.source_switch.set_active(self.source.source_code_enabled)
+        self.source_switch.connect('state-set', self.on_source_switch_changed)
+        content_grid.attach(self.source_switch, 1, 1, 1, 1)
 
         self.uri_entry = Gtk.Entry()
         self.uri_entry.set_placeholder_text("https://ppa.launchpad.net/...")
-        self.uri_entry.set_text(repo_uri)
+        self.uri_entry.set_text(self.source['URIs'])
         self.uri_entry.set_activates_default(False)
         self.uri_entry.set_width_chars(40)
-        content_grid.attach(self.uri_entry, 1, 1, 1, 1)
+        self.uri_entry.connect('changed', self.on_entry_changed, 'URIs')
+        content_grid.attach(self.uri_entry, 1, 2, 1, 1)
 
         self.version_entry = Gtk.Entry()
-        self.version_entry.set_placeholder_text("artful")
-        self.version_entry.set_text(repo_version)
+        self.version_entry.set_placeholder_text(repo.get_os_codename())
+        self.version_entry.set_text(self.source['Suites'])
         self.version_entry.set_activates_default(False)
-        content_grid.attach(self.version_entry, 1, 2, 1, 1)
+        self.version_entry.connect('changed', self.on_entry_changed, 'Suites')
+        content_grid.attach(self.version_entry, 1, 3, 1, 1)
 
         self.component_entry = Gtk.Entry()
         self.component_entry.set_placeholder_text("main")
-        self.component_entry.set_text(repo_component[0])
+        self.component_entry.set_text(self.source['Components'])
         self.component_entry.set_activates_default(False)
-        content_grid.attach(self.component_entry, 1, 3, 1, 1)
+        self.component_entry.connect('changed', self.on_entry_changed, 'Components')
+        content_grid.attach(self.component_entry, 1, 4, 1, 1)
 
         self.enabled_switch = Gtk.Switch()
         self.enabled_switch.set_halign(Gtk.Align.START)
-        self.enabled_switch.set_active(not repo_disabled)
-        content_grid.attach(self.enabled_switch, 1, 4, 1, 1)
+        self.enabled_switch.set_active(self.source.enabled.get_bool())
+        self.enabled_switch.connect('state-set', self.on_enabled_switch_changed)
+        content_grid.attach(self.enabled_switch, 1, 5, 1, 1)
 
         save_button = self.get_widget_for_response(Gtk.ResponseType.OK)
         cancel_button = self.get_widget_for_response(Gtk.ResponseType.CANCEL)
@@ -387,6 +430,26 @@ class EditDialog(Gtk.Dialog):
             action_area.add(cancel_button)
             action_area.add(save_button)
 
+    def on_entry_changed(self, entry, prop):
+        """ entry::changed signal handler
+
+        We want to directly store the values of the entries in the source 
+        object.
+
+        Arguments:
+            entry (Gtk.Editable): The Entry which was changed.
+            prop: The property in which to store the data.
+        """
+        self.source[prop] = entry.get_text()
+    
+    def on_source_switch_changed(self, switch, state):
+        """ switch::state-set handler for source code switch. """
+        self.source.set_source_enabled(state)
+    
+    def on_enabled_switch_changed(self, switch, state):
+        """ switch::state-set handler for enabled switch. """
+        self.source.enabled = state
+
 class InfoDialog(Gtk.Dialog):
 
     def __init__(self, parent, name, option):
@@ -409,7 +472,7 @@ class InfoDialog(Gtk.Dialog):
         settings = Gtk.Settings.get_default()
         header = settings.props.gtk_dialogs_use_header
         super().__init__(
-            _(f'{title}'),
+            f'{title}',
             parent, 
             0,
             modal=1,
@@ -501,7 +564,7 @@ class InfoDialog(Gtk.Dialog):
             self.refs_revealer.add(list_grid)
 
             installed_label = Gtk.Label.new(
-                _(f'The following Flatpaks are currently installed from {title}')
+                _('The following Flatpaks are currently installed from {}').format(title)
             )
 
             installed_label.set_line_wrap(True)
@@ -516,7 +579,8 @@ class InfoDialog(Gtk.Dialog):
             list_window.add(refs_view)
 
             refs_buff = refs_view.get_buffer()
-            refs_list = 'Applications: \n'
+            refs_list = _('Applications:')
+            refs_list += '\n'
             for ref in installed_refs:
                 if ref.get_kind() == flatpak_helper.Flatpak.RefKind.APP:
                     if ref.get_appdata_name():

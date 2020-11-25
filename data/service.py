@@ -33,7 +33,7 @@ import os
 from softwareproperties.SoftwareProperties import SoftwareProperties
 from aptsources.sourceslist import SourceEntry
 
-GLib.threads_init()
+import repolib
 
 class RepomanException(dbus.DBusException):
     _dbus_error_name = 'org.pop_os.repoman.RepomanException'
@@ -52,8 +52,91 @@ class PPA(dbus.service.Object):
         self.dbus_info = None
         self.polkit = None
         self.enforce_polkit = True
+
+        try:
+            self.system_repo = repolib.SystemSource()
+        except:
+            self.system_repo = None
         self.sp = SoftwareProperties()
         self.cache = apt.Cache()
+
+    @dbus.service.method(
+        "org.pop_os.repoman.Interface",
+        in_signature='', out_signature='',
+        sender_keyword='sender', connection_keyword='conn'
+    )
+    def exit(self, sender=None, conn=None):
+        mainloop.quit()
+    
+    @dbus.service.method(
+        "org.pop_os.repoman.Interface",
+        in_signature='b', out_signature='b',
+        sender_keyword='sender', connection_keyword='conn'
+    )
+    def set_system_source_code_enabled(self, enabled, sender=None, conn=None):
+        """ Enable or disable source code in the system source. 
+        
+        Arguments:
+            enabled (bool): The new state to set, True = Enabled.
+        """
+        self._check_polkit_privilege(
+            sender, conn, 'org.pop_os.repoman.modifysources'
+        )
+        if self.system_repo:
+            self.system_repo.load_from_file()
+            new_types = [repolib.util.AptSourceType.BINARY]
+            if enabled:
+                new_types.append(repolib.util.AptSourceType.SOURCE)
+            self.system_repo.types = new_types
+            self.system_repo.save_to_disk()
+            return enabled
+        return False
+
+    @dbus.service.method(
+        "org.pop_os.repoman.Interface",
+        in_signature='sb', out_signature='b',
+        sender_keyword='sender', connection_keyword='conn'
+    )
+    def set_system_comp_enabled(self, comp, enable, sender=None, conn=None):
+        """ Enable or disable a component in the system source. 
+        
+        Arguments:
+            comp (str): the component to set
+            enable (bool): The new state to set, True = Enabled.
+        """
+        self._check_polkit_privilege(
+            sender, conn, 'org.pop_os.repoman.modifysources'
+        )
+        if self.system_repo:
+            self.system_repo.load_from_file()
+            self.system_repo.set_component_enabled(component=comp, enabled=enable)
+            self.system_repo.save_to_disk()
+            return True
+        return False
+    
+    @dbus.service.method(
+        "org.pop_os.repoman.Interface",
+        in_signature='sb', out_signature='b',
+        sender_keyword='sender', connection_keyword='conn'
+    )
+    def set_system_suite_enabled(self, suite, enable, sender=None, conn=None):
+        """ Enable or disable a suite in the system source. 
+        
+        Arguments:
+            suite (str): the suite to set
+            enable (bool): The new state to set, True = Enabled.
+        """
+        self._check_polkit_privilege(
+            sender, conn, 'org.pop_os.repoman.modifysources'
+        )
+        if self.system_repo:
+            self.system_repo.load_from_file()
+            self.system_repo.set_suite_enabled(suite=suite, enabled=enable)
+            self.system_repo.save_to_disk()
+            return True
+        return False
+
+    ## TODO: These are old SoftwareProperties Methods, and need to be replaced.
     
     @dbus.service.method(
         'org.pop_os.repoman.Interface',
@@ -173,14 +256,6 @@ class PPA(dbus.service.Object):
             self.sp.disable_component(comp)
         return 0
 
-    @dbus.service.method(
-        "org.pop_os.repoman.Interface",
-        in_signature='', out_signature='',
-        sender_keyword='sender', connection_keyword='conn'
-    )
-    def exit(self, sender=None, conn=None):
-        mainloop.quit()
-
     def _find_source_from_string(self, line):
         # ensure that we have a current list, it might have been changed underneath
         # us
@@ -263,5 +338,5 @@ if __name__ == '__main__':
     name = dbus.service.BusName("org.pop_os.repoman", bus)
     object = PPA(bus, '/PPA')
 
-    mainloop = GObject.MainLoop()
+    mainloop = GLib.MainLoop()
     mainloop.run()

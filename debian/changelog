@@ -1,3 +1,19 @@
+repoman (2.2.0) UNRELEASED; urgency=medium
+
+  * Added support for renaming repositories
+  * Added ability to change system repository mirrors
+
+ -- Ian Santopietro <ian@system76.com>  Wed, 21 Oct 2020 10:57:09 -0600
+
+repoman (2.0.0) focal; urgency=medium
+
+  * Repoman now uses Repolib instead of SoftwareProperties
+  * Much leaner for the things that Repoman does
+  * Less prone to bugs due to simpler scope
+  * Much faster initial loading
+
+ -- Ian Santopietro <ian@system76.com>  Thu, 17 Sep 2020 12:43:52 -0600
+
 repoman (1.4.0) eoan; urgency=medium
 
   * Monitor Flatpak for external configuration changes.

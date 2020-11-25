@@ -19,18 +19,23 @@
     along with Repoman.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import dbus
 import logging
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
-from .ppa import PPA
-import gettext
-gettext.bindtextdomain('repoman', '/usr/share/repoman/po')
-gettext.textdomain("repoman")
-_ = gettext.gettext
+from gi.repository import Gtk, Gio
+from gettext import gettext as _
+
+from . import repo
 
 class Updates(Gtk.Box):
+
+    distro_codename = repo.get_os_codename()
+    os_name = repo.get_os_name()
+    repo_descriptions = {
+        f'{distro_codename}-security': _('Important security updates'),
+        f'{distro_codename}-updates': _('Recommended updates'),
+        f'{distro_codename}-backports': _('Unsupported updates')
+    }
 
     def __init__(self, parent):
         Gtk.Box.__init__(self, False, 0)
@@ -38,11 +43,8 @@ class Updates(Gtk.Box):
         self.log = logging.getLogger("repoman.Updates")
         self.log.debug('Logging established')
 
-
         self.parent = parent
-
-        self.ppa = PPA(self)
-        self.os_name = self.ppa.get_os_name()
+        self.system_repo = parent.system_repo
         self.handlers = {}
 
         updates_grid = Gtk.Grid()
@@ -73,40 +75,19 @@ class Updates(Gtk.Box):
         self.checks_grid.set_margin_bottom(12)
         self.checks_grid.set_spacing(12)
         updates_grid.attach(self.checks_grid, 0, 2, 1, 1)
+        self.checks_grid.show()
 
-        separator = Gtk.HSeparator()
-        updates_grid.attach(separator, 0, 3, 1, 1)
-
-        self.notifications_title = Gtk.Label(_("Update Notifications"))
-        self.notifications_title.set_halign(Gtk.Align.START)
-        Gtk.StyleContext.add_class(self.notifications_title.get_style_context(), "h2")
-        updates_grid.attach(self.notifications_title, 0, 4, 1, 1)
-
-        self.notifications_label = Gtk.Label(_("Change how %s notifies you about pending software updates.") % self.os_name)
-
-        self.notifications_label.set_line_wrap(True)
-        self.notifications_label.set_halign(Gtk.Align.CENTER)
-        updates_grid.attach(self.notifications_label, 0, 5, 1, 1)
-
-        self.noti_grid = Gtk.Grid()
-        self.noti_grid.set_margin_left(12)
-        self.noti_grid.set_margin_top(12)
-        self.noti_grid.set_margin_right(12)
-        self.noti_grid.set_margin_bottom(12)
-        updates_grid.attach(self.noti_grid, 0, 6, 1, 1)
-
-        notify_check = Gtk.CheckButton.new_with_label(_("Notify about new updates"))
-        self.noti_grid.attach(notify_check, 0, 0, 1, 1)
-
-
-        auto_check = Gtk.CheckButton.new_with_label(_("Automatically install important security updates."))
-        self.noti_grid.attach(auto_check, 0, 1, 1, 1)
-
-        version_check = Gtk.CheckButton.new_with_label(_("Notify about new versions of %s") % self.os_name)
-        self.noti_grid.attach(version_check, 0, 2, 1, 1)
-
-        self.init_updates()
-        self.show_updates()
+        self.create_switches()
+        self.set_suites_enabled(self.parent.setting.checks_enabled)
+        if self.system_repo:
+            self.show_updates()
+        
+        # Watch the config directory for changes, so we can reload if so
+        self.file = Gio.File.new_for_path('/etc/apt/sources.list.d/')
+        self.monitor = self.file.monitor_directory(Gio.FileMonitorFlags.NONE)
+        self.monitor.connect('changed', self.on_config_changed)
+        self.log.debug('Monitor Created: %s', self.monitor)
+        self.show_all()
 
     def block_handlers(self):
         for widget in self.handlers:
@@ -118,51 +99,101 @@ class Updates(Gtk.Box):
             if widget.handler_is_connected(self.handlers[widget]):
                 widget.handler_unblock(self.handlers[widget])
 
-    def init_updates(self):
-        self.log.debug("init_distro")
+    def get_new_switch(self, suite, description=None):
+        """ Creates a Box with a new switch and a description.
 
-        for checkbutton in self.checks_grid.get_children():
-            self.checks_grid.remove(checkbutton)
+        If the name of the suite matches one of the normal default
+        suites, include the description of the suite. Otherwise use the
+        supplied description (if given) or the name of the suite.
 
-        comp_children = self.ppa.get_distro_child_repos()
+        Arguments:
+            suite (str): The name of a distro suite to bind to the switch
+            description (str): An optional description to use if the suite
+                isn't of the predefinied normal sources.
 
-        for template in comp_children:
-            # Do not show -proposed or source entries here
-            if template.type == "deb-src":
-                continue
-            if "proposed" in template.name:
-                continue
+        Returns:
+            A Gtk.Box with the added switch and label description
+        """
 
-            if template.description == "Unsupported Updates":
-                description = _("Backported Updates")
-            else:
-                description = template.description
+        switch = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 6)
+        switch.set_hexpand(True)
+        if suite in self.repo_descriptions:
+            description = self.repo_descriptions[suite]
 
-            checkbox = Gtk.CheckButton(label="%s (%s)" % (description,
-                                                          template.name))
-            checkbox.template = template
-            self.handlers[checkbox] = checkbox.connect("toggled",
-                                                       self.on_child_toggled,
-                                                       template)
-            self.checks_grid.add(checkbox)
-            checkbox.show()
-        return 0
+        label_text = suite
+        if description:
+            label_text = f'{description} ({suite})'
+        label = Gtk.Label.new(label_text)
+        label.set_halign(Gtk.Align.START)
+        switch.label = label
+        switch.add(label)
+        toggle = Gtk.Switch()
+        toggle.set_halign(Gtk.Align.END)
+        toggle.set_hexpand(True)
+        toggle.suite = switch.suite = suite
+        switch.toggle = toggle
+        switch.add(toggle)
+
+        return switch
+
+    def create_switches(self):
+        """ Create switches for all of the suites which can be toggled. """
+        for switch in self.checks_grid.get_children():
+            self.checks_grid.remove(switch)
+
+        for repo in self.repo_descriptions:
+            switch = self.get_new_switch(repo)
+
+            self.handlers[switch.toggle] = switch.toggle.connect(
+                'state-set',
+                self.on_suite_toggled
+            )
+            self.checks_grid.add(switch)
+            switch.show_all()
+        
+        if self.system_repo:
+            for suite in self.system_repo.suites:
+                if suite in self.repo_descriptions:
+                    continue
+                if 'proposed' in suite:
+                    # This is handled on the settings page.
+                    continue
+                if self.distro_codename == suite:
+                    # Skip the standard distro suite.
+                    continue
+                switch = self.get_new_switch(suite)
+                self.handlers[switch.toggle] = switch.toggle.connect(
+                    'state-set',
+                    self.on_suite_toggled
+                )
+                self.checks_grid.add(switch)
+                switch.show_all()
 
     def show_updates(self):
+        """ Initialize the state of all of the switches. """
+        self.log.debug("init_distro")
+        self.system_repo.load_from_file()
+        self.create_switches()
         self.block_handlers()
-        self.log.debug("show updates")
-
-        for checkbox in self.checks_grid.get_children():
-            (active, inconsistent) = self.ppa.get_child_download_state(checkbox.template)
-            checkbox.set_active(active)
-            checkbox.set_inconsistent(inconsistent)
+        
+        for suite in self.checks_grid.get_children():
+            if suite.suite in self.system_repo.suites:
+                suite.toggle.set_active(True)
+            else:
+                suite.toggle.set_active(False)
+            
         self.unblock_handlers()
-        return 0
 
-    def on_child_toggled(self, checkbutton, child):
-        enabled = checkbutton.get_active()
-        try:
-            self.ppa.set_child_enabled(child.name, enabled)
-        except dbus.exceptions.DBusException:
+    def set_suites_enabled(self, enabled):
+        for suite in self.checks_grid.get_children():
+            suite.set_sensitive(enabled)
+
+    def on_suite_toggled(self, switch, state):
+        """ state-set handler for suite switches. """
+        self.system_repo.set_suite_enabled(suite=switch.suite, enabled=state)
+
+    def on_config_changed(self, monitor, file, other_file, event_type):
+        self.log.debug('Installation changed, regenerating list')
+        if self.system_repo:
             self.show_updates()
-
+            self.set_suites_enabled(self.parent.setting.checks_enabled)
