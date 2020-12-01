@@ -237,8 +237,7 @@ class DeleteDialog(Gtk.Dialog):
             delete_explain = Gtk.Label.new(
                 _(
                     'If you remove this source, you will need to add it again '
-                    'to continue using it. Any software you\'ve installed from '
-                    'this source will be removed.'
+                    'to continue using it.'
                 )
             )
         delete_explain.props.wrap = True
