@@ -21,7 +21,7 @@ def polist():
 
 setup(
     name = 'repoman',
-    version = '1.2.2',
+    version = '1.4.0',
     description = 'Easily manage software sources',
     url = 'https://github.com/pop-os/repoman',
     license = 'GNU GPL3',

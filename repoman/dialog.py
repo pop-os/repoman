@@ -486,6 +486,11 @@ class InfoDialog(Gtk.Dialog):
         content_area = self.get_content_area()
         headerbar = self.get_header_bar()
 
+        disable_switch = Gtk.Switch()
+        disable_switch.set_active(not self.remote.get_disabled())
+        disable_switch.connect('state-set', self.on_switch_toggled)
+        headerbar.pack_end(disable_switch)
+
         content_grid = Gtk.Grid()
         content_grid.set_halign(Gtk.Align.FILL)
         content_grid.set_margin_top(24)
@@ -613,3 +618,8 @@ class InfoDialog(Gtk.Dialog):
             self.expanded_height = self.get_allocated_height() - 99
             self.expanded_width = self.get_allocated_width() - 52
             self.resize(self.expanded_width, 1)
+        
+    def on_switch_toggled(self, switch, state):
+        self.log.debug('Setting disabled to %s', not state)
+        self.remote.set_disabled(not state)
+        self.installation.modify_remote(self.remote)
