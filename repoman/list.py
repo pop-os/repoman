@@ -140,8 +140,8 @@ class List(Gtk.Box):
         selec = self.view.get_selection()
         (model, pathlist) = selec.get_selected_rows()
         tree_iter = model.get_iter(pathlist[0])
-        repo_o = self.sources[model.get_value(tree_iter, 2)]
-        dialog = DeleteDialog(self.parent.parent, repo_o.name)
+        rep = self.sources[model.get_value(tree_iter, 2)]
+        dialog = DeleteDialog(self.parent.parent, rep.name)
         response = dialog.run()
 
         if response == Gtk.ResponseType.OK:
@@ -149,10 +149,12 @@ class List(Gtk.Box):
             self.edit_button.set_sensitive(False)
             self.delete_button.set_sensitive(False)
             dialog.destroy()
-            success = repo.delete_repo(repo_name)
+            success = repo.delete_repo(rep)
         else:
             dialog.destroy()
-            success = False
+            # We didn't remove the source... but that was intentional. 
+            # Don't display an error if the user clicks "Cancel"
+            success = True
         
         if not success:
             error_dialog = Gtk.MessageDialog(
@@ -163,7 +165,7 @@ class List(Gtk.Box):
                 text="Could not remove source",
             )
             error_dialog.format_secondary_text(
-                f"The source {repo_name} could not be removed."
+                f"The source {rep.name} could not be removed."
             )
             error_dialog.run()
 
