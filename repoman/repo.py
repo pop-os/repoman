@@ -210,28 +210,6 @@ def get_error_messagedialog(parent, text, exc, prefix):
 
 def _do_add_source(name, line, dialog):
     try:
-        # new_source = repolib.LegacyDebSource()
-
-
-        # if line.startswith('ppa:'):
-        #     bin_repo = repolib.PPALine(line)
-        # else:
-        #     if not line.startswith('deb'):
-        #         line = f'deb {line} {get_os_codename()} main'
-        #     bin_repo = repolib.DebLine(line)
-
-
-        # src_repo = bin_repo.copy()
-        # src_repo.enabled = False
-
-        # new_source.name = bin_repo.name
-        # new_source.sources.append(bin_repo)
-        # new_source.sources.append(src_repo)
-        # new_source.load_from_sources()
-        # new_source.make_names()
-        # log.debug('New source: %s', new_source.make_deblines())
-        # new_source.save_to_disk()
-
         # New process with key management
         new_source = repolib.LegacyDebSource()
         disabled = False 
