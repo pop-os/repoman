@@ -210,30 +210,55 @@ def get_error_messagedialog(parent, text, exc, prefix):
 
 def _do_add_source(name, line, dialog):
     try:
+        # New process with key management
         new_source = repolib.LegacyDebSource()
+        disabled = False 
+        skip_keys = False
 
         # Add the source disabled if it's preceded with a '#'/commented out
         if line.startswith('#'):
             line = line.replace('#', '')
+            disabled = True
 
+        if line.startswith('http') and len(line.split()) == 1:
+            line = f'deb {line} {repolib.util.DISTRO_CODENAME} main'
+        
         if line.startswith('ppa:'):
-            bin_repo = repolib.PPALine(line)
+            add_source = repolib.PPALine(line, verbose=False)
+
+        elif line.startswith('deb'):
+            skip_keys = True
+            add_source = repolib.DebLine(line)
+        
+        new_source.name = add_source.name
+        new_source.sources.append(add_source)
+
+        if not line.startswith('deb-src'):
+            src_source = add_source.copy()
+            src_source.enabled = False
         else:
-            if not line.startswith('deb'):
-                line = f'deb {line} {get_os_codename()} main'
-            bin_repo = repolib.DebLine(line)
+            src_source = add_source
 
+        # Possibly add source code toggle in the future?
 
-        src_repo = bin_repo.copy()
-        src_repo.enabled = False
-
-        new_source.name = bin_repo.name
-        new_source.sources.append(bin_repo)
-        new_source.sources.append(src_repo)
+        if not line.startswith('deb-src'):
+            new_source.sources.append(src_source)
+        
         new_source.load_from_sources()
+
+        add_source.enabled = True
+
+        if disabled:
+            for repo in new_source.sources:
+                repo.enabled = False
+            new_source.enabled = False
+        
         new_source.make_names()
-        log.debug('New source: %s', new_source.make_deblines())
+
+        if not skip_keys:
+            add_source.add_ppa_key(add_source, debug=False, log=log)
         new_source.save_to_disk()
+
     except Exception as err:
         GLib.idle_add(dialog.show_error, err)
     GLib.idle_add(dialog.destroy)
@@ -255,8 +280,10 @@ def delete_repo(repo):
     Note: This is about the only thing we need dbus for, so we use it here
     and only here.
     """
+    remove_source = repo.filename
+    remove_key = repo.key_file
     bus = dbus.SystemBus()
     privileged_object = bus.get_object('org.pop_os.repolib', '/Repo')
-    privileged_object.delete_source(repo)
+    privileged_object.delete_source(remove_source, remove_key.name)
     privileged_object.exit()
     return True
