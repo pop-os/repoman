@@ -23,11 +23,11 @@ msgstr "Adicionar fonte"
 
 #: repoman/dialog.py:109
 msgid "Enter Source Details"
-msgstr "Enter Source Details"
+msgstr "Digite os detalhes da fonte"
 
 #: repoman/dialog.py:113
 msgid "e.g. ppa:mirkobrombin/ppa"
-msgstr ""
+msgstr "e.g. ppa:mirkobrombin/ppa"
 
 #: repoman/dialog.py:124
 msgid "Source Line"
