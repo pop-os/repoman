@@ -1,7 +1,7 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# REPOMAN POT TRANSLATION TEMPLATE.
+# Copyright (C) 2022 Wesley Santos
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Wesley Sabtos <Wesleymadre446@gmail.com>, 2022.
 #
 #, fuzzy
 msgid ""
@@ -9,256 +9,264 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-02-19 15:55-0300\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"PO-Revision-Date: 2022-02-19 15:55-0300\n\n"
+"Last-Translator: Wesley Wendel Melo Dos Santos <wesleymadrfer446@gmail.com>\n"
+"Language-Team: \n"
+"Language: pt-BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #: repoman/dialog.py:80
 msgid "Add Source"
-msgstr ""
+msgstr "Adicionar fonte"
 
 #: repoman/dialog.py:109
 msgid "Enter Source Details"
-msgstr ""
+msgstr "Digite os detalhes da fonte"
 
 #: repoman/dialog.py:113
 msgid "e.g. ppa:mirkobrombin/ppa"
-msgstr ""
+msgstr "e.g. ppa:mirkobrombin/ppa"
 
 #: repoman/dialog.py:124
 msgid "Source Line"
-msgstr ""
+msgstr "Linha de origem"
 
 #: repoman/dialog.py:179
 #, python-format
 msgid "Could not add source: %s"
-msgstr ""
+msgstr "Não foi possível adicionar a fonte: %s"
 
 #: repoman/dialog.py:182
 msgid "Could not add source"
-msgstr ""
+msgstr "Não foi possível adicionar fonte"
 
 #: repoman/dialog.py:184
 msgid "{} could not be added"
-msgstr ""
+msgstr "{} não pôde ser adicionado"
 
 #: repoman/dialog.py:194
 msgid "Remove {}"
-msgstr ""
+msgstr "Remover {}"
 
 #: repoman/dialog.py:223
 msgid "Are you sure you want to remove this source?"
-msgstr ""
+msgstr "Tem certeza de que quer remover esta fonte?"
 
 #: repoman/dialog.py:230
 msgid ""
 "If you remove this source, you will need to add it again to continue using "
 "it. Any software you've installed from this source will remain installed."
 msgstr ""
+"Se você remover esta fonte, precisará adicioná-lo novamente para continuar usando"
+"Isso. Qualquer software que você instalou a partir desta fonte permanecerá instalado."
 
 #: repoman/dialog.py:239
 msgid ""
 "If you remove this source, you will need to add it again to continue using "
 "it."
 msgstr ""
+"Se você remover esta fonte, precisará adicioná-lo novamente para continuar usando"
+"isto."
 
 #: repoman/dialog.py:258
 msgid " All flatpaks you've installed from this source will be removed."
-msgstr ""
+msgstr "Todos os FlatPaks que você instalou a partir desta fonte serão removidos."
 
 #: repoman/dialog.py:263
 msgid "Removed Flatpaks"
-msgstr ""
+msgstr "Flatpaks removidos"
 
 #: repoman/dialog.py:278
 msgid "The following Flatpaks will be removed with this source:"
-msgstr ""
+msgstr "Os seguintes flatpaks serão removidos com esta fonte:"
 
 #: repoman/dialog.py:322
 msgid "Modify Source"
-msgstr ""
+msgstr "Modificar fonte"
 
 #: repoman/dialog.py:345 repoman/dialog.py:365
 msgid "Name"
-msgstr ""
+msgstr "Nome"
 
 #: repoman/dialog.py:347
 msgid "Source Code"
-msgstr ""
+msgstr "Código fonte"
 
 #: repoman/dialog.py:349
 msgid "URIs"
-msgstr ""
+msgstr "URI"
 
 #: repoman/dialog.py:351
 msgid "Version"
-msgstr ""
+msgstr "Versão"
 
 #: repoman/dialog.py:353
 msgid "Components"
-msgstr ""
+msgstr "Componentes"
 
 #: repoman/dialog.py:355
 msgid "Enabled"
-msgstr ""
+msgstr "Habilitado"
 
 #: repoman/dialog.py:542
 msgid "Homepage"
-msgstr ""
+msgstr "Pagina inicial"
 
 #: repoman/dialog.py:550
 msgid "Installed Flatpaks"
-msgstr ""
+msgstr "Flatpaks instalados"
 
 #: repoman/dialog.py:566
 msgid "The following Flatpaks are currently installed from {}"
-msgstr ""
+msgstr "Os seguintes flatpaks estão atualmente instalados a partir de {}"
 
 #: repoman/dialog.py:581
 msgid "Applications:"
-msgstr ""
+msgstr "Aplicações:"
 
 #: repoman/flatpak.py:65
 msgid "Flatpak Sources"
-msgstr ""
+msgstr "Fontes de flatpak."
 
 #: repoman/flatpak.py:70
 msgid ""
 "These sources are for software provided via Flatpak. They may present a "
 "security risk. Only add sources that you trust."
 msgstr ""
-
+"Essas fontes são fornecidas pelo software via Flatpak. Eles podem apresentar um"
+"Risco de segurança. Apenas adicione fontes que você confia".
 #: repoman/flatpak.py:92 repoman/list.py:76
 msgid "Source"
-msgstr ""
+msgstr "Fonte"
 
 #: repoman/flatpak.py:96
 msgid "URL"
-msgstr ""
+msgstr "URL"
 
 #: repoman/flatpak.py:101
 msgid "Type"
-msgstr ""
+msgstr "Tipo"
 
 #: repoman/flatpak.py:117 repoman/list.py:92
 msgid "Add New Source"
-msgstr ""
+msgstr "Adicionar nova fonte"
 
 #: repoman/flatpak.py:126
 msgid "Remote Info"
-msgstr ""
+msgstr "Informações remotas"
 
 #: repoman/flatpak.py:135
 msgid "Remove Selected Source"
-msgstr ""
+msgstr "Remova a fonte selecionada"
 
 #: repoman/list.py:55 repoman/stack.py:60
 msgid "Extra Sources"
-msgstr ""
+msgstr "Fontes extras"
 
 #: repoman/list.py:60
 msgid ""
 "These sources are for software provided by a third party. They may present a "
 "security risk or cause system instability. Only add sources that you trust."
 msgstr ""
+"Essas fontes são para software fornecido por terceiros. Eles podem apresentar um"
+"Risco de segurança ou causar instabilidade no sistema. Apenas adicione fontes que você confia."
 
 #: repoman/list.py:78
 msgid "URI"
-msgstr ""
+msgstr "URI"
 
 #: repoman/list.py:101
 msgid "Modify Selected Source"
-msgstr ""
+msgstr "Modificar fonte selecionada"
 
 #: repoman/list.py:110
 msgid "Delete Selected Source"
-msgstr ""
+msgstr "Excluir fonte selecionada"
 
 #: repoman/settings.py:34
 msgid "Community-maintained software"
-msgstr ""
+msgstr "Software mantido pela comunidade"
 
 #: repoman/settings.py:35
 msgid "Proprietary drivers for devices"
-msgstr ""
+msgstr "Drivers proprietários para dispositivos"
 
 #: repoman/settings.py:36
 msgid "Software with Copyright or Legal Restrictions"
-msgstr ""
+msgstr "Software com direitos autorais ou restrições legais"
 
 #: repoman/settings.py:54 repoman/settings.py:71
 msgid "Include source code"
-msgstr ""
+msgstr "Incluir o código-fonte"
 
 #: repoman/settings.py:62
 msgid "Prerelease updates"
-msgstr ""
+msgstr "Atualizações de pré-lançamento"
 
 #: repoman/settings.py:87
 msgid "Official Sources"
-msgstr ""
+msgstr "Fontes oficiais"
 
 #: repoman/settings.py:94
 msgid ""
 "Official sources are provided by {} and its developers. It's recommended to "
 "leave these sources enabled."
 msgstr ""
-
+"Fontes oficiais são fornecidas por {} e seus desenvolvedores. É recomendado"
+"que você deixe essas fontes ativadas."
 #: repoman/settings.py:114
 msgid "Reset Mirrors to Defaults"
-msgstr ""
+msgstr "Redefinir espelhos para padrões"
 
 #: repoman/settings.py:136
 msgid "Developer Options (Advanced)"
-msgstr ""
+msgstr "Opções de desenvolvedor (Avançado)"
 
 #: repoman/settings.py:148
 msgid "These options are primarily of interest to developers."
-msgstr ""
+msgstr "Essas opções são principalmente de interesse para desenvolvedores."
 
 #: repoman/settings.py:213
 msgid "Remove Mirror"
-msgstr ""
+msgstr "Remover espelho"
 
 #: repoman/settings.py:243
 msgid "Add a new mirror"
-msgstr ""
+msgstr "Adicionar um novo espelho"
 
 #: repoman/settings.py:245
 msgid "Add mirror"
-msgstr ""
+msgstr "Adicionar espelho"
 
 #: repoman/stack.py:54
 msgid "Settings"
-msgstr ""
+msgstr "Configurações"
 
 #: repoman/stack.py:57
 msgid "Updates"
-msgstr ""
+msgstr "Atualizações"
 
 #: repoman/stack.py:66
 msgid "Flatpak"
-msgstr ""
+msgstr "Flatpak"
 
 #: repoman/updates.py:35
 msgid "Important security updates"
-msgstr ""
+msgstr "Atualizações importantes de segurança"
 
 #: repoman/updates.py:36
 msgid "Recommended updates"
-msgstr ""
+msgstr "Atualizações recomendadas"
 
 #: repoman/updates.py:37
 msgid "Unsupported updates"
-msgstr ""
+msgstr "Atualizações não suportadas"
 
 #: repoman/updates.py:59
 msgid "Update Sources"
-msgstr ""
+msgstr "Atualizar fontes"
 
 #: repoman/updates.py:64
 #, python-format
@@ -266,3 +274,5 @@ msgid ""
 "These sources control how %s checks for updates. It is recommended to leave "
 "these sources enabled."
 msgstr ""
+"Essas fontes controlam como %s verifica as atualizações. Recomenda-se deixar"
+"Essas fontes ativadas".
