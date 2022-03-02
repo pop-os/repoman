@@ -254,7 +254,7 @@ class List(Gtk.Box):
         for i in self.sources:
             source = self.sources[i]
             try:
-                if source.enabled:
+                if source.enabled.get_bool():
                     self.log.debug('Source: %s, URIs: %s', source.name, source.uris[0])
                     self.ppa_liststore.insert_with_valuesv(
                         -1,
@@ -268,7 +268,7 @@ class List(Gtk.Box):
         for i in self.sources:
             source = self.sources[i]
             try:
-                if not source.enabled: 
+                if not source.enabled.get_bool(): 
                     self.ppa_liststore.insert_with_valuesv(
                         -1,
                         [0, 1, 2],
