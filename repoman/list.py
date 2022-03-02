@@ -281,7 +281,7 @@ class List(Gtk.Box):
             self.ppa_liststore.insert_with_valuesv(
                 -1,
                 [0, 1, 2],
-                ['sources.list', '<i>Legacy System Sources</i>', 'x-repoman-legacy-sources']
+                ['<i>sources.list</i>', '<i>Legacy System Sources</i>', 'x-repoman-legacy-sources']
             )
             
         self.add_button.set_sensitive(True)
