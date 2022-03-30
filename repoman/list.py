@@ -254,7 +254,7 @@ class List(Gtk.Box):
         for i in self.sources:
             source = self.sources[i]
             try:
-                if source.enabled:
+                if source.enabled.get_bool():
                     self.log.debug('Source: %s, URIs: %s', source.name, source.uris[0])
                     self.ppa_liststore.insert_with_valuesv(
                         -1,
@@ -268,7 +268,7 @@ class List(Gtk.Box):
         for i in self.sources:
             source = self.sources[i]
             try:
-                if not source.enabled: 
+                if not source.enabled.get_bool(): 
                     self.ppa_liststore.insert_with_valuesv(
                         -1,
                         [0, 1, 2],
@@ -281,7 +281,7 @@ class List(Gtk.Box):
             self.ppa_liststore.insert_with_valuesv(
                 -1,
                 [0, 1, 2],
-                ['sources.list', '<i>Legacy System Sources</i>', 'x-repoman-legacy-sources']
+                ['<i>sources.list</i>', '<i>Legacy System Sources</i>', 'x-repoman-legacy-sources']
             )
             
         self.add_button.set_sensitive(True)
