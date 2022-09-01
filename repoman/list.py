@@ -200,10 +200,10 @@ class List(Gtk.Box):
         response = dialog.run()
 
         if response != Gtk.ResponseType.OK:
-            dialog.source.load_from_file()
+            dialog.source.file.load()
         else:
             try:
-                dialog.source.save_to_disk()
+                dialog.source.file.save()
             except Exception as err:
                 self.log.error(
                     'Could not edit mirror %s: %s', source.ident, str(err)
