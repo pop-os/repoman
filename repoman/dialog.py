@@ -149,11 +149,11 @@ class AddDialog(Gtk.Dialog):
         else:
             entry_valid = repo.validate(entry_text)
         
-        entry_isppa = entry_text.startswith('ppa')
+        entry_isshortcut = entry_text in ['ppa', 'popdev']
         entry_isdeb = entry_text.startswith('deb')
 
         # If we're dealing with a plain URL, it can't have spaces
-        if not entry_isppa and not entry_isdeb:
+        if not entry_isshortcut and not entry_isdeb:
             uri = entry_text.split()
             if len(uri) != 1:
                 entry_valid = False
@@ -317,7 +317,7 @@ class EditDialog(Gtk.Dialog):
     def __init__(self, parent, source):
         self.source = source
         # Ensure the source is fully up to date.
-        self.source.load_from_file()
+        self.source.file.load()
 
         Gtk.Dialog.__init__(self, _("Modify Source"), parent, 0,
                             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
@@ -366,12 +366,12 @@ class EditDialog(Gtk.Dialog):
         self.name_entry.set_text(self.source['X-Repolib-Name'])
         self.name_entry.set_activates_default(False)
         self.name_entry.set_width_chars(40)
-        self.name_entry.connect('changed', self.on_entry_changed, 'X-Repolib-Name')
+        # self.name_entry.connect('changed', self.on_entry_changed, 'X-Repolib-Name')
         content_grid.attach(self.name_entry, 1, 0, 1, 1)
 
         self.source_switch = Gtk.Switch()
         self.source_switch.set_halign(Gtk.Align.START)
-        self.source_switch.set_active(self.source.source_code_enabled)
+        self.source_switch.set_active(self.source.sourcecode_enabled)
         self.source_switch.connect('state-set', self.on_source_switch_changed)
         content_grid.attach(self.source_switch, 1, 1, 1, 1)
 
@@ -380,21 +380,21 @@ class EditDialog(Gtk.Dialog):
         self.uri_entry.set_text(self.source['URIs'])
         self.uri_entry.set_activates_default(False)
         self.uri_entry.set_width_chars(40)
-        self.uri_entry.connect('changed', self.on_entry_changed, 'URIs')
+        # self.uri_entry.connect('changed', self.on_entry_changed, 'URIs')
         content_grid.attach(self.uri_entry, 1, 2, 1, 1)
 
         self.version_entry = Gtk.Entry()
         self.version_entry.set_placeholder_text(repo.get_os_codename())
         self.version_entry.set_text(self.source['Suites'])
         self.version_entry.set_activates_default(False)
-        self.version_entry.connect('changed', self.on_entry_changed, 'Suites')
+        # self.version_entry.connect('changed', self.on_entry_changed, 'Suites')
         content_grid.attach(self.version_entry, 1, 3, 1, 1)
 
         self.component_entry = Gtk.Entry()
         self.component_entry.set_placeholder_text("main")
         self.component_entry.set_text(self.source['Components'])
         self.component_entry.set_activates_default(False)
-        self.component_entry.connect('changed', self.on_entry_changed, 'Components')
+        # self.component_entry.connect('changed', self.on_entry_changed, 'Components')
         content_grid.attach(self.component_entry, 1, 4, 1, 1)
 
         self.enabled_switch = Gtk.Switch()
@@ -443,7 +443,7 @@ class EditDialog(Gtk.Dialog):
     
     def on_source_switch_changed(self, switch, state):
         """ switch::state-set handler for source code switch. """
-        self.source.set_source_enabled(state)
+        self.source.sourcecode_enabled = state
     
     def on_enabled_switch_changed(self, switch, state):
         """ switch::state-set handler for enabled switch. """

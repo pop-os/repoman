@@ -132,16 +132,13 @@ class List(Gtk.Box):
         (model, pathlist) = selec.get_selected_rows()
         tree_iter = model.get_iter(pathlist[0])
         repo_name = model.get_value(tree_iter, 2)
-        repo = self.sources[repo_name]
-        self.log.debug('Deleting PPA: %s', repo.filename)
-        self.do_delete(repo.filename)
+        self.log.debug('Deleting Source: %s', repo_name)
+        self.do_delete(repo_name)
     
     def do_delete(self, repo_name):
-        selec = self.view.get_selection()
-        (model, pathlist) = selec.get_selected_rows()
-        tree_iter = model.get_iter(pathlist[0])
-        rep = self.sources[model.get_value(tree_iter, 2)]
-        dialog = DeleteDialog(self.parent.parent, rep.name)
+        file = repo.sources[repo_name].file
+        source = file.get_source_by_ident(repo_name)
+        dialog = DeleteDialog(self.parent.parent, source.name)
         response = dialog.run()
 
         if response == Gtk.ResponseType.OK:
@@ -149,7 +146,15 @@ class List(Gtk.Box):
             self.edit_button.set_sensitive(False)
             self.delete_button.set_sensitive(False)
             dialog.destroy()
-            success = repo.delete_repo(rep)
+            try:
+                file.remove_source(repo_name)
+                file.save()
+                repo.load_all_sources()
+                self.generate_entries()
+                success = True
+            except:
+                success = False
+            
         else:
             dialog.destroy()
             # We didn't remove the source... but that was intentional. 
@@ -165,7 +170,7 @@ class List(Gtk.Box):
                 text="Could not remove source",
             )
             error_dialog.format_secondary_text(
-                f"The source {rep.name} could not be removed."
+                f"The source {repo_name} could not be removed."
             )
             error_dialog.run()
 
@@ -191,19 +196,34 @@ class List(Gtk.Box):
         value = self.ppa_liststore.get_value(tree_iter, 1)
         self.log.info("PPA to edit: %s" % value)
         self.do_edit(value)
+    
+    def sync_source(self, source, dialog):
+        """Sync data from a dialog into a source"""
+        source.name = dialog.name_entry.get_text()
+        source.sourcecode_enabled = dialog.source_switch.get_state()
+        source.uris = dialog.uri_entry.get_text().split()
+        source.suites = dialog.version_entry.get_text().split()
+        source.components = dialog.component_entry.get_text().split()
+        source.enabled = dialog.enabled_switch.get_state()
 
     def do_edit(self, repo_name):
         """ Perform an edit action. """
-        source = self.sources[repo_name]
+        source = repo.sources[repo_name]
         self.log.debug('Editing %s', source)
         dialog = EditDialog(self.parent.parent, source)
         response = dialog.run()
 
         if response != Gtk.ResponseType.OK:
-            dialog.source.file.load()
+            self.log.debug('Cancelling edit')
+            self.generate_entries()
         else:
             try:
-                dialog.source.file.save()
+                file = source.file
+                out_source = file.get_source_by_ident(source.ident)
+                self.sync_source(out_source, dialog)
+                self.log.debug('Saving new source %s', source)
+                out_source.save()
+                self.log.debug('Source saved')
             except Exception as err:
                 self.log.error(
                     'Could not edit mirror %s: %s', source.ident, str(err)
@@ -238,10 +258,12 @@ class List(Gtk.Box):
 
     def generate_entries(self, *args, **kwargs):
         self.log.debug('Generating list of repos')
+        repo.load_all_sources()
         self.ppa_liststore.clear()
 
-        self.sources = repo.sources
-        repo.load_all_sources()
+        for i in repo.sources:
+            self.log.debug('Source: %s', i)
+
         
         # Print a warning to console about source file errors.
         if repo.errors:
@@ -250,11 +272,11 @@ class List(Gtk.Box):
                 err_string += f'{file}\n'
             self.log.warning(err_string)
 
-        self.log.debug('Sources found:\n%s', self.sources)
-        for i in self.sources:
+        # self.log.debug('Sources found:\n%s', repo.sources)
+        for i in repo.sources:
             # if i == 'system':
             #     continue
-            source = self.sources[i]
+            source = repo.sources[i]
             try:
                 if source.enabled.get_bool():
                     self.log.debug('Source: %s, URIs: %s', source.name, source.uris[0])
@@ -267,8 +289,8 @@ class List(Gtk.Box):
                 # Skip any weirdly malformed sources
                 pass
 
-        for i in self.sources:
-            source = self.sources[i]
+        for i in repo.sources:
+            source = repo.sources[i]
             try:
                 if not source.enabled.get_bool(): 
                     self.ppa_liststore.insert_with_valuesv(
