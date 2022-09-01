@@ -19,6 +19,7 @@
 '''
 
 import logging
+from pathlib import Path
 import subprocess
 import threading
 import traceback
@@ -28,6 +29,11 @@ import dbus
 import gi
 from gi.repository import GLib, Gtk
 import repolib
+
+repolib.system.load_all_sources()
+sources = repolib.util.sources
+errors = repolib.util.errors
+load_all_sources = repolib.system.load_all_sources
 
 log = logging.getLogger("repoman.Repo")
 log.debug('Logging established')
@@ -60,7 +66,7 @@ def edit_system_legacy_sources_list():
 
 def get_system_repo():
     """Get a repo for the system sources. """
-    repo = repolib.SystemSource()
+    repo = repolib.util.sources['system']
     return repo
 
 def url_validator(url):
@@ -125,19 +131,17 @@ def get_all_sources(get_system=False):
         The above described dict.
     """
     sources = {}
-    sources_dir = repolib.util.get_sources_dir()
+    sources_dir = Path(repolib.SOURCES_DIR)
     try:
         sources_list_file = sources_dir.parent / 'sources.list'
     except FileNotFoundError:
         sources_list_file = None
     
-    sources_list, errors = repolib.get_all_sources(
-        get_system=get_system,
-        get_exceptions=True
-    )
+    sources_list = repolib.util.sources
+    errors = repolib.util.errors
 
     for source in sources_list:
-        sources[source.ident] = source
+        sources[source] = sources_list[source]
     
     if sources_list_file:
         sources['sources.list'] = {}

@@ -240,18 +240,20 @@ class List(Gtk.Box):
         self.log.debug('Generating list of repos')
         self.ppa_liststore.clear()
 
-        self.sources = {}
-        self.sources, errors = repo.get_all_sources()
+        self.sources = repo.sources
+        repo.load_all_sources()
         
         # Print a warning to console about source file errors.
-        if errors:
+        if repo.errors:
             err_string = 'The following source files have errors:\n\n'
-            for file in errors:
+            for file in repo.errors:
                 err_string += f'{file}\n'
             self.log.warning(err_string)
 
         self.log.debug('Sources found:\n%s', self.sources)
         for i in self.sources:
+            # if i == 'system':
+            #     continue
             source = self.sources[i]
             try:
                 if source.enabled.get_bool():
@@ -276,13 +278,6 @@ class List(Gtk.Box):
                     )
             except AttributeError:
                 pass
-        
-        if 'sources.list' in self.sources:
-            self.ppa_liststore.insert_with_valuesv(
-                -1,
-                [0, 1, 2],
-                ['<i>sources.list</i>', '<i>Legacy System Sources</i>', 'x-repoman-legacy-sources']
-            )
             
         self.add_button.set_sensitive(True)
 
