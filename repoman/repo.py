@@ -30,7 +30,8 @@ import gi
 from gi.repository import GLib, Gtk
 import repolib
 
-repolib.set_logging_level(2)
+## Uncomment for debugging
+# repolib.set_logging_level(2)
 
 repolib.system.load_all_sources()
 sources = repolib.util.sources
