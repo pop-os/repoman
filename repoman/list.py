@@ -274,8 +274,8 @@ class List(Gtk.Box):
 
         # self.log.debug('Sources found:\n%s', repo.sources)
         for i in repo.sources:
-            # if i == 'system':
-            #     continue
+            if i == 'system':
+                continue
             source = repo.sources[i]
             try:
                 if source.enabled.get_bool():
