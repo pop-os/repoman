@@ -14,7 +14,7 @@ Package: repoman
 Architecture: all
 Depends: ${python3:Depends}, ${misc:Depends},
          gir1.2-gtk-3.0,
-         python3-repolib
+         python3-repolib (>= 2.0)
 Description: Repoman
  Hey man, let's go do crimes. Yeah, let's install software and not pay.
 

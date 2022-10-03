@@ -233,7 +233,6 @@ class Settings(Gtk.Box):
 
         Also adds a blank entry for adding a new mirror to the list.
         """
-        self.system_repo.load_from_file()
         self.log.debug('Adding mirrors')
         for child in self.mirror_box.get_children():
             self.log.debug('Removing outdated entry for %s', child.get_text())
@@ -279,7 +278,7 @@ class Settings(Gtk.Box):
                 uris.append(new_uri)
             try:
                 self.system_repo.uris = uris
-                self.system_repo.save_to_disk()
+                self.system_repo.file.save()
             except Exception as err:
                 self.log.error(
                     'Could not add mirror %s: %s', new_uri, str(err)
@@ -334,7 +333,7 @@ class Settings(Gtk.Box):
 
             try:
                 self.system_repo.uris = uris
-                self.system_repo.save_to_disk()
+                self.system_repo.file.save()
             except Exception as err:
                 self.log.error(
                     'Could not remove mirror %s: %s', entry.uri, str(err)
@@ -426,13 +425,11 @@ class Settings(Gtk.Box):
             pass
 
     def show_source_code(self):
-        self.system_repo.load_from_file()
         self.block_handlers()
-        self.source_check.toggle.set_active(self.system_repo.source_code_enabled)
+        self.source_check.toggle.set_active(self.system_repo.sourcecode_enabled)
         self.unblock_handlers()
 
     def show_proposed(self):
-        self.system_repo.load_from_file()
         self.block_handlers()
         if self.proposed_name in self.system_repo.suites:
             self.proposed_check.toggle.set_active(True)
@@ -441,7 +438,6 @@ class Settings(Gtk.Box):
         self.unblock_handlers()
 
     def show_distro(self):
-        self.system_repo.load_from_file()
         self.create_switches()
         self.block_handlers()
         self.switches_sensitive = False
@@ -458,16 +454,33 @@ class Settings(Gtk.Box):
         self.unblock_handlers()
 
     def on_component_toggled(self, switch, state):
-        self.system_repo.set_component_enabled(
-            component=switch.component, enabled=state
-        )
+        components = self.system_repo.components
+        if state:
+            if switch.component not in components:
+                components.append(switch.component)
+        else:
+            if switch.component in components:
+                components.remove(switch.component)
+        self.system_repo.components = components
+        try:
+            self.system_repo.file.save()
+        except Exception as err:
+            self.log.error(
+                    'Could not set component: %s', str(err)
+            )
+            err_dialog = repo.get_error_messagedialog(
+                self.parent.parent,
+                f'Could not set component',
+                err,
+                'The system component could not be changed'
+            )
+            err_dialog.run()
+            err_dialog.destroy()
 
     def on_source_check_toggled(self, switch, state):
-        self.system_repo['Types'] = 'deb'
-        if state:
-            self.system_repo['Types'] = 'deb deb-src'
+        self.system_repo.sourcecode_enabled = state
         try:
-            self.system_repo.save_to_disk()
+            self.system_repo.file.save()
         except Exception as err:
             self.log.error(
                     'Could not set source code: %s', str(err)
@@ -482,9 +495,28 @@ class Settings(Gtk.Box):
             err_dialog.destroy()
 
     def on_proposed_check_toggled(self, switch, state):
-        self.system_repo.set_suite_enabled(
-            suite=switch.component, enabled=state
-        )
+        suites = self.system_repo.suites
+        if state:
+            if switch.component not in suites:
+                suites.append(switch.component)
+        else:
+            if switch.component in suites:
+                suites.remove(switch.component)
+        self.system_repo.suites = suites
+        try:
+            self.system_repo.file.save()
+        except Exception as err:
+            self.log.error(
+                    'Could not set suite: %s', str(err)
+            )
+            err_dialog = repo.get_error_messagedialog(
+                self.parent.parent,
+                f'Could not set suite',
+                err,
+                'The system suite could not be changed'
+            )
+            err_dialog.run()
+            err_dialog.destroy()
 
     def on_config_changed(self, monitor, file, other_file, event_type):
         self.log.debug('Installation changed, regenerating list')
@@ -497,8 +529,8 @@ class Settings(Gtk.Box):
     def on_reset_mirror_button_clicked(self, button):
         self.log.warning('Resetting mirrors to default values.')
         try:
-            self.system_repo.set_default_mirror()
-            self.system_repo.save_to_disk()
+            self.system_repo.uris = [self.system_repo.default_mirror]
+            self.system_repo.file.save()
         except Exception as err:
             self.log.error(
                 'Could not reset mirrors'

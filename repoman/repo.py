@@ -19,6 +19,7 @@
 '''
 
 import logging
+from pathlib import Path
 import subprocess
 import threading
 import traceback
@@ -28,6 +29,14 @@ import dbus
 import gi
 from gi.repository import GLib, Gtk
 import repolib
+
+## Uncomment for debugging
+# repolib.set_logging_level(2)
+
+repolib.system.load_all_sources()
+sources = repolib.util.sources
+errors = repolib.util.errors
+load_all_sources = repolib.system.load_all_sources
 
 log = logging.getLogger("repoman.Repo")
 log.debug('Logging established')
@@ -60,7 +69,7 @@ def edit_system_legacy_sources_list():
 
 def get_system_repo():
     """Get a repo for the system sources. """
-    repo = repolib.SystemSource()
+    repo = repolib.util.sources['system']
     return repo
 
 def url_validator(url):
@@ -125,19 +134,17 @@ def get_all_sources(get_system=False):
         The above described dict.
     """
     sources = {}
-    sources_dir = repolib.util.get_sources_dir()
+    sources_dir = Path(repolib.SOURCES_DIR)
     try:
         sources_list_file = sources_dir.parent / 'sources.list'
     except FileNotFoundError:
         sources_list_file = None
     
-    sources_list, errors = repolib.get_all_sources(
-        get_system=get_system,
-        get_exceptions=True
-    )
+    sources_list = repolib.util.sources
+    errors = repolib.util.errors
 
     for source in sources_list:
-        sources[source.ident] = source
+        sources[source] = sources_list[source]
     
     if sources_list_file:
         sources['sources.list'] = {}
@@ -150,7 +157,19 @@ def get_os_codename():
 
 def validate(line):
     """ Validate a repo line. """
-    return repolib.util.validate_debline(line)
+    if line.startswith('deb'):
+        return repolib.util.validate_debline(line)
+    elif line.startswith('ppa'):
+        linel = line.split(':')
+        if not len(linel) > 1:
+            return False
+        if not '/' in linel[-1]:
+            return False
+        return True
+    elif line.startswith('popdev'):
+        if not ':' in line:
+            return False
+        return True
 
 def get_os_name():
     """ Returns the current OS name, or fallback if not available."""
@@ -211,9 +230,9 @@ def get_error_messagedialog(parent, text, exc, prefix):
 def _do_add_source(name, line, dialog):
     try:
         # New process with key management
-        new_source = repolib.LegacyDebSource()
         disabled = False 
         skip_keys = False
+        add_source = None
 
         # Add the source disabled if it's preceded with a '#'/commented out
         if line.startswith('#'):
@@ -223,41 +242,31 @@ def _do_add_source(name, line, dialog):
         if line.startswith('http') and len(line.split()) == 1:
             line = f'deb {line} {repolib.util.DISTRO_CODENAME} main'
         
-        if line.startswith('ppa:'):
-            add_source = repolib.PPALine(line, verbose=False)
-
-        elif line.startswith('deb'):
-            skip_keys = True
-            add_source = repolib.DebLine(line)
+        for prefix in repolib.shortcut_prefixes:
+            if line.startswith(prefix):
+                add_source = repolib.shortcut_prefixes[prefix]()
         
-        new_source.name = add_source.name
-        new_source.sources.append(add_source)
-
-        if not line.startswith('deb-src'):
-            src_source = add_source.copy()
-            src_source.enabled = False
-        else:
-            src_source = add_source
+        add_source.load_from_data([line])
 
         # Possibly add source code toggle in the future?
 
-        if not line.startswith('deb-src'):
-            new_source.sources.append(src_source)
-        
-        new_source.load_from_sources()
-
         add_source.enabled = True
-
-        if disabled:
-            for repo in new_source.sources:
-                repo.enabled = False
-            new_source.enabled = False
+        if line.startswith('#'):
+            add_source.enabled = False
         
-        new_source.make_names()
+        if not add_source.ident:
+            add_source.generate_default_ident()
+        
+        add_file = repolib.SourceFile(name=add_source.ident)
+        add_file.format = add_source.default_format
+        add_file.add_source(add_source)
+        add_source.file = add_file
 
-        if not skip_keys:
-            add_source.add_ppa_key(add_source, debug=False, log=log)
-        new_source.save_to_disk()
+        log.debug('File format: %s', add_file.format)
+        log.debug('File path: %s', add_file.path)
+        log.debug('Sources in file %s:\n%s', add_file.path, add_file.sources)
+
+        add_file.save()
 
     except Exception as err:
         GLib.idle_add(dialog.show_error, err)

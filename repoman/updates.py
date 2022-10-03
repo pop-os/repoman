@@ -172,7 +172,6 @@ class Updates(Gtk.Box):
     def show_updates(self):
         """ Initialize the state of all of the switches. """
         self.log.debug("init_distro")
-        self.system_repo.load_from_file()
         self.create_switches()
         self.block_handlers()
         
@@ -190,7 +189,28 @@ class Updates(Gtk.Box):
 
     def on_suite_toggled(self, switch, state):
         """ state-set handler for suite switches. """
-        self.system_repo.set_suite_enabled(suite=switch.suite, enabled=state)
+        suites = self.system_repo.suites
+        if state:
+            if switch.suite not in suites:
+                suites.append(switch.suite)
+        else:
+            if switch.suite in suites:
+                suites.remove(switch.suite)
+        self.system_repo.suites = suites
+        try:
+            self.system_repo.file.save()
+        except Exception as err:
+            self.log.error(
+                    'Could not set suite: %s', str(err)
+            )
+            err_dialog = repo.get_error_messagedialog(
+                self.parent.parent,
+                f'Could not set suite',
+                err,
+                'The system suite could not be changed'
+            )
+            err_dialog.run()
+            err_dialog.destroy()
 
     def on_config_changed(self, monitor, file, other_file, event_type):
         self.log.debug('Installation changed, regenerating list')
