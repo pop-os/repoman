@@ -73,7 +73,7 @@ class Window(Gtk.Window):
             'font-family="monospace" '
             'background="#333333" '
             'foreground="white" '
-            '> apt-manage -b </span> '
+            '> apt-manage list -va </span> '
         )
         err_string += 'for more information.'
         self.err_dialog = ErrorDialog(
