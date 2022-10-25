@@ -20,9 +20,11 @@
 '''
 
 import logging
+from datetime import date
+
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk  # type: ignore
  
 from gettext import gettext as _ 
 
@@ -34,6 +36,7 @@ from . import repo
 
 settings = Gtk.Settings.get_default()
 header = settings.props.gtk_dialogs_use_header
+header = True
 
 class ErrorDialog(Gtk.Dialog):
 
@@ -318,6 +321,13 @@ class EditDialog(Gtk.Dialog):
         self.source = source
         # Ensure the source is fully up to date.
         self.source.file.load()
+        has_key: bool = False
+        try: 
+            if self.source.get_key_info():
+                has_key = True
+        except AttributeError:
+            # Repolib installed does not support keys
+            pass
 
         Gtk.Dialog.__init__(self, _("Modify Source"), parent, 0,
                             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
@@ -329,18 +339,41 @@ class EditDialog(Gtk.Dialog):
         self.parent = parent
 
         self.props.resizable = False
+        self.props.width_request = 600
 
         content_area = self.get_content_area()
 
-        content_grid = Gtk.Grid()
-        content_grid.set_margin_top(24)
-        content_grid.set_margin_left(24)
-        content_grid.set_margin_right(24)
-        content_grid.set_margin_bottom(24)
-        content_grid.set_column_spacing(12)
-        content_grid.set_row_spacing(12)
-        content_grid.set_halign(Gtk.Align.CENTER)
-        content_area.add(content_grid)
+        self.content_stack = Gtk.Stack()
+        self.content_stack.set_halign(Gtk.Align.START)
+        content_area.add(self.content_stack)
+
+        if has_key:
+            self.log.info('Adding Key Info Pane')
+            stackswitcher = Gtk.StackSwitcher()
+            stackswitcher.set_stack(self.content_stack)
+            headerbar = self.get_titlebar()
+            headerbar.set_custom_title(stackswitcher)
+            stackswitcher.show()
+
+        edit_grid = Gtk.Grid()
+        edit_grid.set_margin_top(24)
+        edit_grid.set_margin_left(24)
+        edit_grid.set_margin_right(24)
+        edit_grid.set_margin_bottom(24)
+        edit_grid.set_column_spacing(12)
+        edit_grid.set_row_spacing(12)
+        edit_grid.set_halign(Gtk.Align.CENTER)
+        self.content_stack.add_titled(edit_grid, 'edit', _('Modify Source'))
+
+        key_grid = Gtk.Grid()
+        key_grid.set_margin_top(24)
+        key_grid.set_margin_left(24)
+        key_grid.set_margin_right(24)
+        key_grid.set_margin_bottom(24)
+        key_grid.set_column_spacing(12)
+        key_grid.set_row_spacing(12)
+        key_grid.set_halign(Gtk.Align.START)
+        self.content_stack.add_titled(key_grid, 'key', _('Signing Key Info'))
 
         name_label = Gtk.Label.new(_('Name'))
         name_label.set_halign(Gtk.Align.END)
@@ -354,12 +387,12 @@ class EditDialog(Gtk.Dialog):
         component_label.set_halign(Gtk.Align.END)
         enabled_label = Gtk.Label(_("Enabled"))
         enabled_label.set_halign(Gtk.Align.END)
-        content_grid.attach(name_label, 0, 0, 1, 1)
-        content_grid.attach(type_label, 0, 1, 1, 1)
-        content_grid.attach(uri_label, 0, 2, 1, 1)
-        content_grid.attach(version_label, 0, 3, 1, 1)
-        content_grid.attach(component_label, 0, 4, 1, 1)
-        content_grid.attach(enabled_label, 0, 5, 1, 1)
+        edit_grid.attach(name_label, 0, 0, 1, 1)
+        edit_grid.attach(type_label, 0, 1, 1, 1)
+        edit_grid.attach(uri_label, 0, 2, 1, 1)
+        edit_grid.attach(version_label, 0, 3, 1, 1)
+        edit_grid.attach(component_label, 0, 4, 1, 1)
+        edit_grid.attach(enabled_label, 0, 5, 1, 1)
 
         self.name_entry = Gtk.Entry()
         self.name_entry.set_placeholder_text(_('Name'))
@@ -367,13 +400,13 @@ class EditDialog(Gtk.Dialog):
         self.name_entry.set_activates_default(False)
         self.name_entry.set_width_chars(40)
         # self.name_entry.connect('changed', self.on_entry_changed, 'X-Repolib-Name')
-        content_grid.attach(self.name_entry, 1, 0, 1, 1)
+        edit_grid.attach(self.name_entry, 1, 0, 1, 1)
 
         self.source_switch = Gtk.Switch()
         self.source_switch.set_halign(Gtk.Align.START)
         self.source_switch.set_active(self.source.sourcecode_enabled)
         self.source_switch.connect('state-set', self.on_source_switch_changed)
-        content_grid.attach(self.source_switch, 1, 1, 1, 1)
+        edit_grid.attach(self.source_switch, 1, 1, 1, 1)
 
         self.uri_entry = Gtk.Entry()
         self.uri_entry.set_placeholder_text("https://ppa.launchpad.net/...")
@@ -381,27 +414,96 @@ class EditDialog(Gtk.Dialog):
         self.uri_entry.set_activates_default(False)
         self.uri_entry.set_width_chars(40)
         # self.uri_entry.connect('changed', self.on_entry_changed, 'URIs')
-        content_grid.attach(self.uri_entry, 1, 2, 1, 1)
+        edit_grid.attach(self.uri_entry, 1, 2, 1, 1)
 
         self.version_entry = Gtk.Entry()
         self.version_entry.set_placeholder_text(repo.get_os_codename())
         self.version_entry.set_text(self.source['Suites'])
         self.version_entry.set_activates_default(False)
         # self.version_entry.connect('changed', self.on_entry_changed, 'Suites')
-        content_grid.attach(self.version_entry, 1, 3, 1, 1)
+        edit_grid.attach(self.version_entry, 1, 3, 1, 1)
 
         self.component_entry = Gtk.Entry()
         self.component_entry.set_placeholder_text("main")
         self.component_entry.set_text(self.source['Components'])
         self.component_entry.set_activates_default(False)
         # self.component_entry.connect('changed', self.on_entry_changed, 'Components')
-        content_grid.attach(self.component_entry, 1, 4, 1, 1)
+        edit_grid.attach(self.component_entry, 1, 4, 1, 1)
 
         self.enabled_switch = Gtk.Switch()
         self.enabled_switch.set_halign(Gtk.Align.START)
         self.enabled_switch.set_active(self.source.enabled.get_bool())
         self.enabled_switch.connect('state-set', self.on_enabled_switch_changed)
-        content_grid.attach(self.enabled_switch, 1, 5, 1, 1)
+        edit_grid.attach(self.enabled_switch, 1, 5, 1, 1)
+
+        if has_key:
+            """
+            +--------------------------------------------+
+            | Cancel   Modify Source   *Key Info*   Save |
+            +--------------------------------------------+
+            |                                            |
+            | Key ID: Key Name                           |
+            | Fingerprint: FP                            |
+            | Key Type: Public                           |
+            | Issue Date: 2022-10-22                     |
+            | Size: 4096                                 |
+            | Subkeys: 1                                 |
+            |   +------------------------------------+   |
+            |   | subkey: fingerprint                |   |
+            |   | ID: name                           |   |
+            |   | Date: 2022-10-22                   |   |
+            |   | .......                            |   |
+            |   +------------------------------------+   |
+            +--------------------------------------------+
+            """
+            self.key = self.source.get_key_info()
+            keyid_label = Gtk.Label.new(_('Key ID:'))
+            keyid_label.set_halign(Gtk.Align.END)
+            keyid_label.set_valign(Gtk.Align.START)
+            fingerprint_label = Gtk.Label.new(_('Fingerprint:'))
+            fingerprint_label.set_halign(Gtk.Align.END)
+            keytype_label = Gtk.Label.new(_('Key Type:'))
+            keytype_label.set_halign(Gtk.Align.END)
+            issuedate_label = Gtk.Label.new(_('Issue Date:'))
+            issuedate_label.set_halign(Gtk.Align.END)
+            keysize_label = Gtk.Label.new(_('Size:'))
+            keysize_label.set_halign(Gtk.Align.END)
+            keypath_label = Gtk.Label.new(_('Keyring Path:'))
+            keypath_label.set_halign(Gtk.Align.END)
+            keypath_label.set_valign(Gtk.Align.START)
+            key_grid.attach(keyid_label,       0, 0, 1, 1)
+            key_grid.attach(fingerprint_label, 0, 1, 1, 1)
+            key_grid.attach(keytype_label,     0, 2, 1, 1)
+            key_grid.attach(issuedate_label,   0, 3, 1, 1)
+            key_grid.attach(keysize_label,     0, 4, 1, 1)
+            key_grid.attach(keypath_label,     0, 5, 1, 1)
+            keyid = Gtk.Label.new(self.key['uids'][0])
+            keyid.set_line_wrap(True)
+            keyid.set_max_width_chars(60)
+            keyid.props.xalign = 0
+            fingerprint = Gtk.Label.new(self.key['keyid'])
+            if self.key['type'] == 'pub':
+                keytype = Gtk.Label.new(_('Public'))
+            else:
+                keytype = Gtk.Label.new(_('Private'))
+            keydate = date.fromtimestamp(int(self.key['date']))
+            issuedate = Gtk.Label.new(keydate.ctime())
+            sizeunit:str = _('Bytes')
+            keysize = Gtk.Label.new(f'{self.key["length"]} {sizeunit}')
+            keypath = Gtk.Label.new(str(self.source.key.path))
+            keypath.set_line_wrap(True)
+            keypath.set_max_width_chars(60)
+            keypath.props.xalign = 0
+            for i in [keyid, fingerprint, keytype, issuedate, keysize, keypath]:
+                i.set_halign(Gtk.Align.START)
+            key_grid.attach(keyid,       1, 0, 1, 1)
+            key_grid.attach(fingerprint, 1, 1, 1, 1)
+            key_grid.attach(keytype,     1, 2, 1, 1)
+            key_grid.attach(issuedate,   1, 3, 1, 1)
+            key_grid.attach(keysize,     1, 4, 1, 1)
+            key_grid.attach(keypath,     1, 5, 1, 1)
+
+
 
         save_button = self.get_widget_for_response(Gtk.ResponseType.OK)
         cancel_button = self.get_widget_for_response(Gtk.ResponseType.CANCEL)
