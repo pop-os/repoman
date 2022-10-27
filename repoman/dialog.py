@@ -318,23 +318,32 @@ class EditDialog(Gtk.Dialog):
     ppa_name = False
 
     def __init__(self, parent, source):
+        self.log = logging.getLogger("repoman.EditDialog")
+        
         self.source = source
         # Ensure the source is fully up to date.
         self.source.file.load()
         has_key: bool = False
+        supports_keys: bool = True
         try: 
             if self.source.get_key_info():
                 has_key = True
         except AttributeError:
             # Repolib installed does not support keys
-            pass
+            supports_keys = False
+        
+        self.log.debug(
+            'Repolib supports keys: %s / Source has key: %s', 
+            supports_keys,
+            has_key
+        )
+        
 
         Gtk.Dialog.__init__(self, _("Modify Source"), parent, 0,
                             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                              Gtk.STOCK_SAVE, Gtk.ResponseType.OK),
                              modal=1, use_header_bar=header)
 
-        self.log = logging.getLogger("repoman.EditDialog")
 
         self.parent = parent
 
@@ -346,14 +355,6 @@ class EditDialog(Gtk.Dialog):
         self.content_stack = Gtk.Stack()
         self.content_stack.set_halign(Gtk.Align.START)
         content_area.add(self.content_stack)
-
-        if has_key:
-            self.log.info('Adding Key Info Pane')
-            stackswitcher = Gtk.StackSwitcher()
-            stackswitcher.set_stack(self.content_stack)
-            headerbar = self.get_titlebar()
-            headerbar.set_custom_title(stackswitcher)
-            stackswitcher.show()
 
         edit_grid = Gtk.Grid()
         edit_grid.set_margin_top(24)
@@ -374,6 +375,19 @@ class EditDialog(Gtk.Dialog):
         key_grid.set_row_spacing(12)
         key_grid.set_halign(Gtk.Align.START)
         self.content_stack.add_titled(key_grid, 'key', _('Signing Key Info'))
+
+        if has_key:
+            self.log.info('Adding Key Info Pane')
+            stackswitcher = Gtk.StackSwitcher()
+            stackswitcher.set_stack(self.content_stack)
+            headerbar = self.get_titlebar()
+            headerbar.set_custom_title(stackswitcher)
+            stackswitcher.show()
+        
+        elif supports_keys:
+            add_key_button = Gtk.Button.new_with_label(_('Add signing key'))
+            edit_grid.attach(add_key_button, 1, 6, 1, 2)
+            add_key_button.connect('clicked', self.on_add_key_clicked)
 
         name_label = Gtk.Label.new(_('Name'))
         name_label.set_halign(Gtk.Align.END)
@@ -530,6 +544,16 @@ class EditDialog(Gtk.Dialog):
             action_area.remove(cancel_button)
             action_area.add(cancel_button)
             action_area.add(save_button)
+    
+    def on_add_key_clicked(self, button):
+        """ button::clicked signal handler
+        
+        Open a dialog to add a signing key
+        """
+        dialog = AddKeyDialog(self, self.source)
+        dialog.run()
+        dialog.destroy()
+        self.response(Gtk.ResponseType.OK)
 
     def on_entry_changed(self, entry, prop):
         """ entry::changed signal handler
@@ -551,6 +575,188 @@ class EditDialog(Gtk.Dialog):
         """ switch::state-set handler for enabled switch. """
         self.source.enabled = state
 
+class AddKeyDialog(Gtk.Dialog):
+
+    def __init__(self, parent, source) -> None:
+        self.log = logging.getLogger("repoman.EditDialog")
+        self.source = source
+
+        self.sks_keyserver = repo.repolib.key.SKS_KEYSERVER
+
+        super().__init__(
+            _("Add Signing Key"), parent, 0,
+            (
+                Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                Gtk.STOCK_SAVE, Gtk.ResponseType.OK
+            ),
+            modal=1, use_header_bar=header
+        )
+
+        self.parent = parent
+
+        self.props.resizable = False
+        self.props.width_request = 600
+
+        content_area = self.get_content_area()
+
+        content_grid = Gtk.Grid()
+        content_grid.set_margin_top(24)
+        content_grid.set_margin_left(24)
+        content_grid.set_margin_right(24)
+        content_grid.set_margin_bottom(24)
+        content_grid.set_column_spacing(12)
+        content_grid.set_row_spacing(12)
+        content_area.add(content_grid)
+
+        info_label = Gtk.Label.new(_(
+            'Signing keys ensure system security by verifying that downloaded '
+            'software from this source has not been tampered with.'
+        ))
+        info_label.set_justify(Gtk.Justification.CENTER)
+        info_label.set_max_width_chars(60)
+        info_label.set_line_wrap(True)
+        info_label.set_hexpand(True)
+        content_grid.attach(info_label, 0, 0, 2, 1)
+
+        self.key_select_stack = Gtk.Stack()
+        content_grid.attach(self.key_select_stack, 1, 1, 1, 2)
+        self.sub_label = Gtk.Label.new(_('Select a thing'))
+        self.sub_label.set_no_show_all(True)
+        self.sub_label.set_valign(Gtk.Align.START)
+        content_grid.attach(self.sub_label, 0, 2, 1, 1)
+
+        self.prime_entry = Gtk.Entry()
+        self.prime_entry.set_no_show_all(False)
+        self.prime_buffer: str = ''
+
+        self.secondary_entry = Gtk.Entry()
+        self.secondary_entry.set_no_show_all(False)
+        self.secondary_buffer: str = ''
+
+        fingerprint_grid = Gtk.Grid()
+        self.key_select_stack.add_named(fingerprint_grid, 'fingerprint')
+        fingerprint_entry = Gtk.Entry()
+        fingerprint_entry.connect('changed', self.on_prime_entry_changed)
+        fingerprint_entry.set_placeholder_text(_('Fingerprint'))
+        fingerprint_entry.set_hexpand(True)
+        fingerprint_grid.attach(fingerprint_entry, 0, 0, 1, 1)
+        keyserver_entry = Gtk.Entry()
+        keyserver_entry.connect('changed', self.on_secondary_entry_changed)
+        keyserver_entry.set_placeholder_text(self.sks_keyserver)
+        keyserver_entry.set_text(self.sks_keyserver)
+        fingerprint_grid.attach(keyserver_entry, 0, 1, 1, 1)
+
+        url_grid = Gtk.Grid()
+        self.key_select_stack.add_named(url_grid, 'url')
+        url_entry = Gtk.Entry()
+        url_entry.connect('changed', self.on_prime_entry_changed)
+        url_entry.set_hexpand(True)
+        url_entry.set_placeholder_text(_('URL'))
+        url_grid.attach(url_entry, 0, 0, 1, 1)
+
+        path_grid = Gtk.Grid()
+        self.key_select_stack.add_named(path_grid, 'path')
+        path_entry = Gtk.Entry() # TODO: Make this a filechooserbutton
+        path_entry.connect('changed', self.on_prime_entry_changed)
+        path_entry.set_hexpand(True)
+        path_grid.attach(path_entry, 0, 0, 1, 1)
+
+        ascii_grid = Gtk.Grid()
+        self.key_select_stack.add_named(ascii_grid, 'ascii')
+        ascii_scrolled = Gtk.ScrolledWindow()
+        ascii_textview = Gtk.TextView()
+        ascii_textview.get_buffer().connect('changed', self.on_prime_entry_changed)
+        ascii_textview.set_hexpand(True)
+        ascii_textview.set_vexpand(True)
+        ascii_textview.set_monospace(True)
+        ascii_grid.attach(ascii_scrolled, 0, 1, 1, 1)
+        ascii_scrolled.add(ascii_textview)
+
+        self.key_type_combo = Gtk.ComboBoxText()
+        self.key_type_combo.set_valign(Gtk.Align.START)
+        self.key_type_combo.append('fingerprint', _('Fingerprint'))
+        self.key_type_combo.append('url', _('URL'))
+        self.key_type_combo.append('path', _('Path'))
+        self.key_type_combo.append('ascii', _('ASCII-Armor'))
+        self.key_type_combo.set_active_id('fingerprint')
+        self.key_type_combo.connect('changed', self.on_key_type_changed)
+        content_grid.attach(self.key_type_combo, 0, 1, 1, 1)
+
+        self.save_button = self.get_widget_for_response(Gtk.ResponseType.OK)
+        Gtk.StyleContext.add_class(self.save_button.get_style_context(),
+                                   "suggested-action")
+        self.save_button.connect('clicked', self.on_save_clicked)
+        self.save_button.set_sensitive(False)
+
+        self.show_all()
+
+    def on_save_clicked(self, button):
+        """button::clicked signal handler
+        
+        Save the key
+        """
+        self.log.debug('Key Type: %s', self.key_type_combo.get_active_id())
+        self.log.debug('Key data: %s', self.prime_buffer)
+        self.log.debug('Key Options: %s', self.secondary_buffer)
+        repo.add_key(
+            self.source, 
+            key_type=self.key_type_combo.get_active_id(),
+            key_data=self.prime_buffer,
+            key_options=self.secondary_buffer
+        )
+        self
+
+
+    def on_prime_entry_changed(self, entry):
+        """entry::changed signal handler
+        
+        Puts the contents of the entry into the primary buffer.
+        """
+        try:
+            # widget is an entry
+            self.prime_buffer = entry.get_text()
+        except TypeError:
+            # Widget is a TextBuffer
+            self.prime_buffer = entry.props.text
+        
+        if len(self.prime_buffer) > 0:
+            self.save_button.set_sensitive(True)
+        else:
+            self.save_button.set_sensitive(False)
+        self.log.debug('Prime buffer:')
+        self.log.debug(self.prime_buffer)
+    
+    def on_secondary_entry_changed(self, entry):
+        """entry::changed signal handler
+        
+        Puts the contents of the entry into the secondary buffer.
+        """
+        self.secondary_buffer = entry.get_text()
+        self.log.debug('Secondary buffer:')
+        self.log.debug(self.secondary_buffer)
+    
+    def on_key_type_changed(self, combo):
+        """ComboBox::changed signal handler
+        
+        Need to show/hide and set text for the sub label
+        """
+        self.save_button.set_sensitive(False)
+        self.prime_buffer = ''
+        self.secondary_buffer = ''
+        sub_label_props = {
+           #'combo-id':    (_('Text to set'), visible:bool)
+            'fingerprint': (_('Keyserver'),   True),
+            'url':         (_('none'),        False),
+            'path':        (_('none'),        False),
+            'ascii':       (_('none'),        False)
+        }
+        props_to_set = sub_label_props[combo.get_active_id()]
+        self.sub_label.set_text(props_to_set[0])
+        self.sub_label.set_visible(props_to_set[1])
+        self.key_select_stack.set_visible_child_name(combo.get_active_id())
+
+        
+        
 class InfoDialog(Gtk.Dialog):
 
     def __init__(self, parent, name, option):
