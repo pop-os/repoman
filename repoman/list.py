@@ -173,20 +173,19 @@ class List(Gtk.Box):
                 f"The source {repo_name} could not be removed."
             )
             error_dialog.run()
-
             error_dialog.destroy()
 
     def on_edit_button_clicked(self, widget):
         selec = self.view.get_selection()
         (model, pathlist) = selec.get_selected_rows()
         tree_iter = model.get_iter(pathlist[0])
-        repo_name = model.get_value(tree_iter, 2)
-        self.log.info("PPA to edit: %s" % repo_name)
-        if repo_name == 'x-repoman-legacy-sources':
+        ident = model.get_value(tree_iter, 2)
+        self.log.info("Source to edit: %s" % ident)
+        if ident == 'x-repoman-legacy-sources':
             repo.edit_system_legacy_sources_list()
         else:
-            self.do_edit(repo_name)
-        self.generate_entries()
+            source = repo.sources[ident]
+            self.do_edit(source)
     
     def edit_sources_list(self):
         repo.edit_system_legacy_sources_list()
@@ -206,17 +205,15 @@ class List(Gtk.Box):
         source.components = dialog.component_entry.get_text().split()
         source.enabled = dialog.enabled_switch.get_state()
 
-    def do_edit(self, repo_name):
+    def do_edit(self, source, key:bool = False):
         """ Perform an edit action. """
-        source = repo.sources[repo_name]
         self.log.debug('Editing %s', source)
         dialog = EditDialog(self.parent.parent, source)
+        if key:
+            dialog.content_stack.set_visible_child_name('key')
         response = dialog.run()
 
-        if response != Gtk.ResponseType.OK:
-            self.log.debug('Cancelling edit')
-            self.generate_entries()
-        else:
+        if response == Gtk.ResponseType.OK:
             try:
                 file = source.file
                 out_source = file.get_source_by_ident(source.ident)
@@ -236,7 +233,32 @@ class List(Gtk.Box):
                 )
                 err_dialog.run()
                 err_dialog.destroy()
-
+        elif response == Gtk.ResponseType.APPLY:
+            try:
+                file = source.file
+                out_source = file.get_source_by_ident(source.ident)
+                self.sync_source(out_source, dialog)
+                out_source.key = dialog.key
+                out_source.signed_by = str(out_source.key.path)
+                out_source.load_key()
+                self.log.debug('Saving new source %s', source)
+                out_source.save()
+                self.log.debug('Source saved')
+            except Exception as err:
+                self.log.error(
+                    'Could not edit mirror %s: %s', source.ident, str(err)
+                )
+                err_dialog = repo.get_error_messagedialog(
+                    self.parent.parent,
+                    f'Could not save source',
+                    err,
+                    f'{source.name} could not be saved'
+                )
+                err_dialog.run()
+                err_dialog.destroy()
+        else:
+            self.log.debug('Cancelling edit')
+            
         self.log.debug('New source: %s', dialog.source)
         dialog.destroy()
 
@@ -317,9 +339,12 @@ class List(Gtk.Box):
                 self.remote_name = repo_name
                 if repo_name != 'x-repoman-legacy-sources':
                     self.delete_button.set_sensitive(True)
+                    self.key_button.set_sensitive(True)
                 else:
                     self.delete_button.set_sensitive(False)
+                    self.key_button.set_sensitive(False)
         else:
+            self.key_button.set_sensitive(False)
             self.edit_button.set_sensitive(False)
             self.delete_button.set_sensitive(False)
 

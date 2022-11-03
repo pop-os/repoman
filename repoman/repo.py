@@ -99,7 +99,8 @@ def _add_path(key, path:str, options:str = '') -> bool:
     
     return True
 
-def _do_add_key(name, source:repolib.Source, key_type:str, key_data:str, key_options:str) -> bool:
+def get_key(source, key_type: str = '', key_data:str = '', key_options:str = ''):
+    log.debug('Adding %s key for source %s', key_type, source.ident)
     """Add a key to the system"""
 
     key = repolib.SourceKey(name=source.ident)
@@ -111,23 +112,9 @@ def _do_add_key(name, source:repolib.Source, key_type:str, key_data:str, key_opt
         'ascii': _add_ascii
     }
 
-    result = add_funcs[key_type](key, key_data, options=key_options)
+    add_funcs[key_type](key, key_data, options=key_options)
 
-    if result:
-        source.key = key
-        source.signed_by = str(key.path)
-        source.load_key()
-        print(source)
-        print(source.get_key_info())
-        return True
-    
-    return False
-
-def add_key(source, key_type: str = '', key_data:str = '', key_options:str = ''):
-    log.debug('Adding %s key for source %s', key_type, source.ident)
-    # dialog.set_busy()
-    thread = threading.Thread(target=_do_add_key, args=(1, source, key_type, key_data, key_options))
-    thread.start()
+    return key
 
 def edit_system_legacy_sources_list():
     thread = threading.Thread(

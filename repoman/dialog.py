@@ -323,6 +323,7 @@ class EditDialog(Gtk.Dialog):
         self.source = source
         # Ensure the source is fully up to date.
         self.source.file.load()
+        self.key = None
         has_key: bool = False
         supports_keys: bool = True
         try: 
@@ -552,8 +553,14 @@ class EditDialog(Gtk.Dialog):
         """
         dialog = AddKeyDialog(self, self.source)
         dialog.run()
+        self.key = repo.get_key(
+            self.source,
+            key_type=dialog.key_type_combo.get_active_id(),
+            key_data=dialog.prime_buffer,
+            key_options=dialog.secondary_buffer
+        )
         dialog.destroy()
-        self.response(Gtk.ResponseType.OK)
+        self.response(Gtk.ResponseType.APPLY)
 
     def on_entry_changed(self, entry, prop):
         """ entry::changed signal handler
@@ -685,26 +692,9 @@ class AddKeyDialog(Gtk.Dialog):
         self.save_button = self.get_widget_for_response(Gtk.ResponseType.OK)
         Gtk.StyleContext.add_class(self.save_button.get_style_context(),
                                    "suggested-action")
-        self.save_button.connect('clicked', self.on_save_clicked)
         self.save_button.set_sensitive(False)
 
         self.show_all()
-
-    def on_save_clicked(self, button):
-        """button::clicked signal handler
-        
-        Save the key
-        """
-        self.log.debug('Key Type: %s', self.key_type_combo.get_active_id())
-        self.log.debug('Key data: %s', self.prime_buffer)
-        self.log.debug('Key Options: %s', self.secondary_buffer)
-        repo.add_key(
-            self.source, 
-            key_type=self.key_type_combo.get_active_id(),
-            key_data=self.prime_buffer,
-            key_options=self.secondary_buffer
-        )
-        self
 
 
     def on_prime_entry_changed(self, entry):
