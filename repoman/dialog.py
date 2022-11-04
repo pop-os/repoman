@@ -452,25 +452,6 @@ class EditDialog(Gtk.Dialog):
         edit_grid.attach(self.enabled_switch, 1, 5, 1, 1)
 
         if has_key:
-            """
-            +--------------------------------------------+
-            | Cancel   Modify Source   *Key Info*   Save |
-            +--------------------------------------------+
-            |                                            |
-            | Key ID: Key Name                           |
-            | Fingerprint: FP                            |
-            | Key Type: Public                           |
-            | Issue Date: 2022-10-22                     |
-            | Size: 4096                                 |
-            | Subkeys: 1                                 |
-            |   +------------------------------------+   |
-            |   | subkey: fingerprint                |   |
-            |   | ID: name                           |   |
-            |   | Date: 2022-10-22                   |   |
-            |   | .......                            |   |
-            |   +------------------------------------+   |
-            +--------------------------------------------+
-            """
             self.key = self.source.get_key_info()
             keyid_label = Gtk.Label.new(_('Key ID:'))
             keyid_label.set_halign(Gtk.Align.END)
@@ -486,12 +467,19 @@ class EditDialog(Gtk.Dialog):
             keypath_label = Gtk.Label.new(_('Keyring Path:'))
             keypath_label.set_halign(Gtk.Align.END)
             keypath_label.set_valign(Gtk.Align.START)
+            delete_key_button = Gtk.Button.new_with_label(_('Remove Key'))
+            delete_key_button.connect('clicked', self.on_delete_key_button_clicked)
+            Gtk.StyleContext.add_class(
+                delete_key_button.get_style_context(),
+                'destructive-action'
+            )
             key_grid.attach(keyid_label,       0, 0, 1, 1)
             key_grid.attach(fingerprint_label, 0, 1, 1, 1)
             key_grid.attach(keytype_label,     0, 2, 1, 1)
             key_grid.attach(issuedate_label,   0, 3, 1, 1)
             key_grid.attach(keysize_label,     0, 4, 1, 1)
             key_grid.attach(keypath_label,     0, 5, 1, 1)
+            key_grid.attach(delete_key_button, 1, 6, 1, 1)
             keyid = Gtk.Label.new(self.key['uids'][0])
             keyid.set_line_wrap(True)
             keyid.set_max_width_chars(60)
@@ -561,6 +549,14 @@ class EditDialog(Gtk.Dialog):
         )
         dialog.destroy()
         self.response(Gtk.ResponseType.APPLY)
+    
+    def on_delete_key_button_clicked(self, button):
+        delete_dialog = DeleteKeyDialog(self, self.source.ident)
+        response = delete_dialog.run()
+        delete_dialog.destroy()
+        if response == Gtk.ResponseType.OK:
+            self.response(Gtk.ResponseType.REJECT)
+        
 
     def on_entry_changed(self, entry, prop):
         """ entry::changed signal handler
@@ -745,7 +741,68 @@ class AddKeyDialog(Gtk.Dialog):
         self.sub_label.set_visible(props_to_set[1])
         self.key_select_stack.set_visible_child_name(combo.get_active_id())
 
+class DeleteKeyDialog(Gtk.Dialog):
+
+    def __init__(self, parent, name) -> None:
+        super().__init__(
+            'Remove Signing Key',
+            parent,
+            0,
+            ((
+                Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                Gtk.STOCK_DELETE, Gtk.ResponseType.OK
+            )),
+            modal=1,
+            use_header_bar=header
+        )
+        self.set_size_request(350, 250)
+        self.set_resizable(False)
+        self.set_deletable(False)
+        self.set_transient_for(parent)
+
+        content_area = self.get_content_area()
+
+        content_grid = Gtk.Grid()
+        content_grid.set_margin_top(24)
+        content_grid.set_margin_left(24)
+        content_grid.set_margin_right(24)
+        content_grid.set_margin_bottom(24)
+        content_grid.set_column_spacing(36)
+        content_grid.set_row_spacing(12)
+        content_area.add(content_grid)
+
+        main_text:str = _(
+            f'<b>Remove signing key for {name}</b>'
+        )
+        main_label = Gtk.Label()
+        main_label.set_width_chars(55)
+        main_label.set_max_width_chars(55)
+        main_label.set_line_wrap(True)
+        main_label.set_markup(main_text)
+
+        sub_text:str = _(
+            'If you remove the key, there may no longer be any verification of '
+            'software packages from this repository, including for future '
+            'updates. This may cause errors with your updates.\n\n'
+            'If no other sources use this key, it will be deleted from '
+            'this computer.'
+        )
+        sub_label = Gtk.Label.new(sub_text)
+        sub_label.set_width_chars(55)
+        sub_label.set_max_width_chars(55)
+        sub_label.set_line_wrap(True)
         
+        content_grid.attach(main_label, 0, 0, 1, 1)
+        content_grid.attach(sub_label, 0, 1, 1, 1)
+
+        cancel_button = self.get_widget_for_response(Gtk.ResponseType.OK)
+        Gtk.StyleContext.add_class(
+            cancel_button.get_style_context(),
+            'destructive-action'
+        )
+
+        self.show_all()
+
         
 class InfoDialog(Gtk.Dialog):
 

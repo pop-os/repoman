@@ -256,9 +256,53 @@ class List(Gtk.Box):
                 )
                 err_dialog.run()
                 err_dialog.destroy()
+        elif response == Gtk.ResponseType.REJECT:
+            try:
+                file = source.file
+                out_source = file.get_source_by_ident(source.ident)
+                self.sync_source(out_source, dialog)
+                old_key = out_source.key
+                out_source.key = None
+                out_source.signed_by = ''
+                multi_key: bool = False
+                for other_source in repo.sources.values():
+                    if other_source.ident == out_source.ident:
+                        continue
+                    if other_source.key == old_key:
+                        self.log.debug(
+                            'Found key in use with %s', other_source.ident
+                        )
+                        multi_key = True
+                        break
+                if multi_key:
+                    self.log.info(
+                        'Key file %s in use with another key, not deleting',
+                        old_key.path
+                    )
+                else:
+                    self.log.warning(
+                        'No other source found using the key %s, deleting',
+                        old_key.path
+                    )
+                    old_key.delete_key()
+                self.log.debug('Saving new source %s', source)
+                out_source.save()
+                self.log.debug('Source saved')
+            except Exception as err:
+                self.log.error(
+                    'Could not edit mirror %s: %s', source.ident, str(err)
+                )
+                err_dialog = repo.get_error_messagedialog(
+                    self.parent.parent,
+                    f'Could not save source',
+                    err,
+                    f'{source.name} could not be saved'
+                )
+                err_dialog.run()
+                err_dialog.destroy()
         else:
             self.log.debug('Cancelling edit')
-            
+
         self.log.debug('New source: %s', dialog.source)
         dialog.destroy()
 
@@ -339,12 +383,9 @@ class List(Gtk.Box):
                 self.remote_name = repo_name
                 if repo_name != 'x-repoman-legacy-sources':
                     self.delete_button.set_sensitive(True)
-                    self.key_button.set_sensitive(True)
                 else:
                     self.delete_button.set_sensitive(False)
-                    self.key_button.set_sensitive(False)
         else:
-            self.key_button.set_sensitive(False)
             self.edit_button.set_sensitive(False)
             self.delete_button.set_sensitive(False)
 
