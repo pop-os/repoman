@@ -540,15 +540,16 @@ class EditDialog(Gtk.Dialog):
         Open a dialog to add a signing key
         """
         dialog = AddKeyDialog(self, self.source)
-        dialog.run()
-        self.key = repo.get_key(
-            self.source,
-            key_type=dialog.key_type_combo.get_active_id(),
-            key_data=dialog.prime_buffer,
-            key_options=dialog.secondary_buffer
-        )
+        response = dialog.run()
         dialog.destroy()
-        self.response(Gtk.ResponseType.APPLY)
+        if response == Gtk.ResponseType.OK:
+            self.key = repo.get_key(
+                self.source,
+                key_type=dialog.key_type_combo.get_active_id(),
+                key_data=dialog.prime_buffer,
+                key_options=dialog.secondary_buffer
+            )
+            self.response(Gtk.ResponseType.APPLY)
     
     def on_delete_key_button_clicked(self, button):
         delete_dialog = DeleteKeyDialog(self, self.source.ident)
