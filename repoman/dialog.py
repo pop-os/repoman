@@ -546,7 +546,6 @@ class EditDialog(Gtk.Dialog):
         """
         dialog = AddKeyDialog(self, self.source)
         response = dialog.run()
-        dialog.destroy()
         if response == Gtk.ResponseType.OK:
             self.key = repo.get_key(
                 self.source,
@@ -554,7 +553,9 @@ class EditDialog(Gtk.Dialog):
                 key_data=dialog.prime_buffer,
                 key_options=dialog.secondary_buffer
             )
+            dialog.destroy()
             self.response(Gtk.ResponseType.APPLY)
+        dialog.destroy()
     
     def on_delete_key_button_clicked(self, button):
         delete_dialog = DeleteKeyDialog(self, self.source.ident)
