@@ -553,7 +553,11 @@ class EditDialog(Gtk.Dialog):
                 key_data=dialog.prime_buffer,
                 key_options=dialog.secondary_buffer
             )
+            self.key_data = dialog.prime_buffer
+            self.keytype = dialog.key_type_combo.get_active_id()
             dialog.destroy()
+            if not self.key:
+                raise Exception(f'Could not add the key to source {self.source.ident}!')
             self.response(Gtk.ResponseType.APPLY)
         dialog.destroy()
     
@@ -666,10 +670,19 @@ class AddKeyDialog(Gtk.Dialog):
 
         path_grid = Gtk.Grid()
         self.key_select_stack.add_named(path_grid, 'path')
-        path_entry = Gtk.Entry() # TODO: Make this a filechooserbutton
-        path_entry.connect('changed', self.on_prime_entry_changed)
-        path_entry.set_hexpand(True)
-        path_grid.attach(path_entry, 0, 0, 1, 1)
+        # path_entry = Gtk.Entry() # TODO: Make this a filechooserbutton
+        # path_entry.connect('changed', self.on_prime_entry_changed)
+        # path_entry.set_hexpand(True)
+        # path_grid.attach(path_entry, 0, 0, 1, 1)
+
+        path_select = Gtk.FileChooserButton(
+            'Signing Key Path',
+            Gtk.FileChooserAction.OPEN
+        )
+        path_select.set_current_folder(str(repo.repolib.KEYS_DIR))
+        path_select.set_hexpand(True)
+        path_select.connect('file-set', self.on_file_set)
+        path_grid.attach(path_select, 0, 0, 1, 1)
 
         ascii_grid = Gtk.Grid()
         self.key_select_stack.add_named(ascii_grid, 'ascii')
@@ -699,6 +712,11 @@ class AddKeyDialog(Gtk.Dialog):
 
         self.show_all()
 
+
+    def on_file_set(self, button):
+        self.prime_buffer = button.get_filename()
+        self.log.debug('Prime buffer: %s', self.prime_buffer)
+        self.save_button.set_sensitive(True)
 
     def on_prime_entry_changed(self, entry):
         """entry::changed signal handler
@@ -743,6 +761,7 @@ class AddKeyDialog(Gtk.Dialog):
             'path':        (_('none'),        False),
             'ascii':       (_('none'),        False)
         }
+        self.log.debug('Key Type: %s', combo.get_active_id())
         props_to_set = sub_label_props[combo.get_active_id()]
         self.sub_label.set_text(props_to_set[0])
         self.sub_label.set_visible(props_to_set[1])

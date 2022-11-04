@@ -238,9 +238,12 @@ class List(Gtk.Box):
                 file = source.file
                 out_source = file.get_source_by_ident(source.ident)
                 self.sync_source(out_source, dialog)
-                out_source.key = dialog.key
-                out_source.signed_by = str(out_source.key.path)
-                out_source.load_key()
+                if dialog.keytype == 'path':
+                    out_source.signed_by = dialog.key_data
+                else:
+                    out_source.key = dialog.key
+                    out_source.signed_by = str(out_source.key.path)
+                # out_source.load_key()
                 self.log.debug('Saving new source %s', source)
                 out_source.save()
                 self.log.debug('Source saved')
