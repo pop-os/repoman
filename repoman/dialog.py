@@ -481,19 +481,24 @@ class EditDialog(Gtk.Dialog):
             key_grid.attach(keypath_label,     0, 5, 1, 1)
             key_grid.attach(delete_key_button, 1, 6, 1, 1)
             keyid = Gtk.Label.new(self.key['uids'][0])
+            keyid.set_selectable(True)
             keyid.set_line_wrap(True)
             keyid.set_max_width_chars(60)
             keyid.props.xalign = 0
             fingerprint = Gtk.Label.new(self.key['keyid'])
+            fingerprint.set_selectable(True)
             if self.key['type'] == 'pub':
                 keytype = Gtk.Label.new(_('Public'))
             else:
                 keytype = Gtk.Label.new(_('Private'))
             keydate = date.fromtimestamp(int(self.key['date']))
             issuedate = Gtk.Label.new(keydate.ctime())
+            issuedate.set_selectable(True)
             sizeunit:str = _('Bytes')
             keysize = Gtk.Label.new(f'{self.key["length"]} {sizeunit}')
+            keysize.set_selectable(True)
             keypath = Gtk.Label.new(str(self.source.key.path))
+            keypath.set_selectable(True)
             keypath.set_line_wrap(True)
             keypath.set_max_width_chars(60)
             keypath.props.xalign = 0
@@ -803,8 +808,7 @@ class DeleteKeyDialog(Gtk.Dialog):
         )
 
         self.show_all()
-
-        
+       
 class InfoDialog(Gtk.Dialog):
 
     def __init__(self, parent, name, option):
