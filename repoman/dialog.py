@@ -414,7 +414,6 @@ class EditDialog(Gtk.Dialog):
         self.name_entry.set_text(self.source['X-Repolib-Name'])
         self.name_entry.set_activates_default(False)
         self.name_entry.set_width_chars(40)
-        # self.name_entry.connect('changed', self.on_entry_changed, 'X-Repolib-Name')
         edit_grid.attach(self.name_entry, 1, 0, 1, 1)
 
         self.source_switch = Gtk.Switch()
@@ -428,21 +427,18 @@ class EditDialog(Gtk.Dialog):
         self.uri_entry.set_text(self.source['URIs'])
         self.uri_entry.set_activates_default(False)
         self.uri_entry.set_width_chars(40)
-        # self.uri_entry.connect('changed', self.on_entry_changed, 'URIs')
         edit_grid.attach(self.uri_entry, 1, 2, 1, 1)
 
         self.version_entry = Gtk.Entry()
         self.version_entry.set_placeholder_text(repo.get_os_codename())
         self.version_entry.set_text(self.source['Suites'])
         self.version_entry.set_activates_default(False)
-        # self.version_entry.connect('changed', self.on_entry_changed, 'Suites')
         edit_grid.attach(self.version_entry, 1, 3, 1, 1)
 
         self.component_entry = Gtk.Entry()
         self.component_entry.set_placeholder_text("main")
         self.component_entry.set_text(self.source['Components'])
         self.component_entry.set_activates_default(False)
-        # self.component_entry.connect('changed', self.on_entry_changed, 'Components')
         edit_grid.attach(self.component_entry, 1, 4, 1, 1)
 
         self.enabled_switch = Gtk.Switch()
@@ -670,10 +666,6 @@ class AddKeyDialog(Gtk.Dialog):
 
         path_grid = Gtk.Grid()
         self.key_select_stack.add_named(path_grid, 'path')
-        # path_entry = Gtk.Entry() # TODO: Make this a filechooserbutton
-        # path_entry.connect('changed', self.on_prime_entry_changed)
-        # path_entry.set_hexpand(True)
-        # path_grid.attach(path_entry, 0, 0, 1, 1)
 
         path_select = Gtk.FileChooserButton(
             'Signing Key Path',

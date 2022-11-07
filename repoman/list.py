@@ -243,7 +243,6 @@ class List(Gtk.Box):
                 else:
                     out_source.key = dialog.key
                     out_source.signed_by = str(out_source.key.path)
-                # out_source.load_key()
                 self.log.debug('Saving new source %s', source)
                 out_source.save()
                 self.log.debug('Source saved')
