@@ -693,7 +693,6 @@ class AddKeyDialog(Gtk.Dialog):
         self.key_type_combo.append('url', _('URL'))
         self.key_type_combo.append('path', _('Path'))
         self.key_type_combo.append('ascii', _('ASCII-Armor'))
-        self.key_type_combo.set_active_id('fingerprint')
         self.key_type_combo.connect('changed', self.on_key_type_changed)
         content_grid.attach(self.key_type_combo, 0, 1, 1, 1)
 
@@ -703,6 +702,7 @@ class AddKeyDialog(Gtk.Dialog):
         self.save_button.set_sensitive(False)
 
         self.show_all()
+        self.key_type_combo.set_active_id('fingerprint')
 
 
     def on_file_set(self, button):
