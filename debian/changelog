@@ -1,9 +1,15 @@
-repoman (2.2.0) UNRELEASED; urgency=medium
+repoman (2.3.0) jammy; urgency=medium
+
+  * Added repository key management
+
+ -- Ian Santopietro <ian@system76.com>  Mon, 07 Nov 2022 10:36:30 -0700
+
+repoman (2.2.0) jammy; urgency=medium
 
   * Added support for renaming repositories
   * Added ability to change system repository mirrors
 
- -- Ian Santopietro <ian@system76.com>  Wed, 21 Oct 2020 10:57:09 -0600
+ -- Ian Santopietro <ian@system76.com>  Mon, 07 Nov 2022 10:36:07 -0700
 
 repoman (2.0.0) focal; urgency=medium
 
