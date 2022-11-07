@@ -633,6 +633,8 @@ class AddKeyDialog(Gtk.Dialog):
         self.sub_label = Gtk.Label.new(_('Select a thing'))
         self.sub_label.set_no_show_all(True)
         self.sub_label.set_valign(Gtk.Align.START)
+        self.sub_label.set_halign(Gtk.Align.END)
+        self.sub_label.set_vexpand(True)
         content_grid.attach(self.sub_label, 0, 2, 1, 1)
 
         self.prime_entry = Gtk.Entry()
@@ -644,6 +646,7 @@ class AddKeyDialog(Gtk.Dialog):
         self.secondary_buffer: str = ''
 
         fingerprint_grid = Gtk.Grid()
+        fingerprint_grid.set_row_spacing(5) # Aligns helper text with entry text
         self.key_select_stack.add_named(fingerprint_grid, 'fingerprint')
         fingerprint_entry = Gtk.Entry()
         fingerprint_entry.connect('changed', self.on_prime_entry_changed)
