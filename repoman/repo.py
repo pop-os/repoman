@@ -268,7 +268,7 @@ def get_error_messagedialog(parent, text, exc, prefix):
 
     traceback_text = ' '.join(traceback.format_tb(exc.__traceback__))
     secondary_text = GLib.markup_escape_text(str(exc))
-    dialog.format_secondary_markup(f'{prefix}:\n{secondary_text}')
+    dialog.format_secondary_markup(f'{prefix}\n{secondary_text}')
     content_area = dialog.get_content_area()
     
     expander = Gtk.Expander.new('Error details:')
