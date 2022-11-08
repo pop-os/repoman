@@ -325,7 +325,6 @@ class EditDialog(Gtk.Dialog):
         self.source.file.load()
         self.key = None
         has_key: bool = False
-        bad_key:bool = False
         supports_keys: bool = True
         try: 
             if self.source.get_key_info():
@@ -359,10 +358,61 @@ class EditDialog(Gtk.Dialog):
             )
             secondary_label = error_dialog.get_message_area().get_children()[-1]
             secondary_label.set_line_wrap(False)
-            error_dialog.run()
+            cancel_button = error_dialog.get_widget_for_response(Gtk.ResponseType.CANCEL)
+            cancel_button.set_label('Continue')
+            error_dialog.add_button(_('Remove Key'), Gtk.ResponseType.OK)
+            delete_button = error_dialog.get_widget_for_response(Gtk.ResponseType.OK)
+            Gtk.StyleContext.add_class(delete_button.get_style_context(), 'destructive-action')
+            
+            response = error_dialog.run()
+            if response == Gtk.ResponseType.OK:
+                try:
+                    file = source.file
+                    out_source = file.get_source_by_ident(source.ident)
+                    old_key = out_source.key
+                    out_source.key = None
+                    out_source.signed_by = ''
+                    multi_key: bool = False
+                    for other_source in repo.sources.values():
+                        if other_source.ident == out_source.ident:
+                            continue
+                        if other_source.key == old_key:
+                            self.log.debug(
+                                'Found key in use with %s', other_source.ident
+                            )
+                            multi_key = True
+                            break
+                    if multi_key:
+                        self.log.info(
+                            'Key file %s in use with another key, not deleting',
+                            old_key.path
+                        )
+                    else:
+                        self.log.warning(
+                            'No other source found using the key %s, deleting',
+                            old_key.path
+                        )
+                        old_key.delete_key()
+                    self.log.debug('Saving new source %s', source)
+                    out_source.save()
+                    self.log.debug('Source saved')
+                except Exception as err:
+                    self.log.error(
+                        'Could not edit mirror %s: %s', source.ident, str(err)
+                    )
+                    err_dialog = repo.get_error_messagedialog(
+                        parent,
+                        f'Could not save source',
+                        err,
+                        f'{source.name} could not be saved'
+                    )
+                    err_dialog.run()
+                    err_dialog.destroy()
+                    supports_keys = False
+            else:
+                supports_keys = False
+
             error_dialog.destroy()
-            supports_keys = False
-            bad_key = True
         
         self.log.debug(
             'Repolib supports keys: %s / Source has key: %s', 
@@ -421,7 +471,7 @@ class EditDialog(Gtk.Dialog):
             edit_grid.attach(add_key_button, 1, 6, 1, 2)
             add_key_button.connect('clicked', self.on_add_key_clicked)
         
-        elif
+        # elif
 
         name_label = Gtk.Label.new(_('Name'))
         name_label.set_halign(Gtk.Align.END)
