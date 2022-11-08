@@ -349,7 +349,6 @@ class EditDialog(Gtk.Dialog):
             )
             error_message += f' > apt-manage key {self.source.ident} --remove '
             error_message += '</span> \n'
-            error_message += 'to remove the faulty key. '
             error_dialog = repo.get_error_messagedialog(
                 parent,
                 f'The signing key for {self.source.name} has errors',
