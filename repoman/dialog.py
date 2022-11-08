@@ -566,6 +566,7 @@ class EditDialog(Gtk.Dialog):
                 error_dialog.destroy()
                 dialog.destroy()
                 self.response(Gtk.ResponseType.CANCEL)
+                return
             self.key_data = dialog.prime_buffer
             self.keytype = dialog.key_type_combo.get_active_id()
             dialog.destroy()
