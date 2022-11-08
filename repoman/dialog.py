@@ -325,6 +325,7 @@ class EditDialog(Gtk.Dialog):
         self.source.file.load()
         self.key = None
         has_key: bool = False
+        bad_key:bool = False
         supports_keys: bool = True
         try: 
             if self.source.get_key_info():
@@ -332,6 +333,36 @@ class EditDialog(Gtk.Dialog):
         except AttributeError:
             # Repolib installed does not support keys
             supports_keys = False
+        except Exception as err:
+            # Some other issue with keys
+            self.log.error(
+                'The key for %s contained errors: %s',
+                self.source.ident,
+                str(err)
+            )
+            error_message:str = 'The key information cannot be loaded. \n\n'
+            error_message += 'To remove the faulty key, run \n'
+            error_message += (
+                '<span '
+                'font-family="monospace" '
+                'background="#333333" '
+                'foreground="white" '
+            )
+            error_message += f' > apt-manage key {self.source.ident} --remove '
+            error_message += '</span> \n'
+            error_message += 'to remove the faulty key. '
+            error_dialog = repo.get_error_messagedialog(
+                parent,
+                f'The signing key for {self.source.name} has errors',
+                err,
+                error_message
+            )
+            secondary_label = error_dialog.get_message_area().get_children()[-1]
+            secondary_label.set_line_wrap(False)
+            error_dialog.run()
+            error_dialog.destroy()
+            supports_keys = False
+            bad_key = True
         
         self.log.debug(
             'Repolib supports keys: %s / Source has key: %s', 
@@ -389,6 +420,8 @@ class EditDialog(Gtk.Dialog):
             add_key_button = Gtk.Button.new_with_label(_('Add signing key'))
             edit_grid.attach(add_key_button, 1, 6, 1, 2)
             add_key_button.connect('clicked', self.on_add_key_clicked)
+        
+        elif
 
         name_label = Gtk.Label.new(_('Name'))
         name_label.set_halign(Gtk.Align.END)
