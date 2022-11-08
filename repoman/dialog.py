@@ -543,12 +543,29 @@ class EditDialog(Gtk.Dialog):
         dialog = AddKeyDialog(self, self.source)
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
-            self.key = repo.get_key(
-                self.source,
-                key_type=dialog.key_type_combo.get_active_id(),
-                key_data=dialog.prime_buffer,
-                key_options=dialog.secondary_buffer
-            )
+            try:
+                self.key = repo.get_key(
+                    self.source,
+                    key_type=dialog.key_type_combo.get_active_id(),
+                    key_data=dialog.prime_buffer,
+                    key_options=dialog.secondary_buffer
+                )
+            except Exception as err:
+                self.log.error(
+                    'Could not add key to %s: %s', 
+                    self.source.ident, 
+                    str(err)
+                )
+                error_dialog = repo.get_error_messagedialog(
+                    self.parent,
+                    f'Could not add key to {self.source.name}',
+                    err,
+                    f'{self.source.ident} will not be saved.'
+                )
+                error_dialog.run()
+                error_dialog.destroy()
+                dialog.destroy()
+                self.response(Gtk.ResponseType.CANCEL)
             self.key_data = dialog.prime_buffer
             self.keytype = dialog.key_type_combo.get_active_id()
             dialog.destroy()
