@@ -20,9 +20,11 @@
 '''
 
 import logging
+from datetime import date
+
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk  # type: ignore
  
 from gettext import gettext as _ 
 
@@ -34,6 +36,7 @@ from . import repo
 
 settings = Gtk.Settings.get_default()
 header = settings.props.gtk_dialogs_use_header
+header = True
 
 class ErrorDialog(Gtk.Dialog):
 
@@ -315,32 +318,159 @@ class EditDialog(Gtk.Dialog):
     ppa_name = False
 
     def __init__(self, parent, source):
+        self.log = logging.getLogger("repoman.EditDialog")
+        
         self.source = source
         # Ensure the source is fully up to date.
         self.source.file.load()
+        self.key = None
+        has_key: bool = False
+        supports_keys: bool = True
+        try: 
+            if self.source.get_key_info():
+                has_key = True
+        except AttributeError:
+            # Repolib installed does not support keys
+            supports_keys = False
+        except Exception as err:
+            # Some other issue with keys
+            self.log.error(
+                'The key for %s contained errors: %s',
+                self.source.ident,
+                str(err)
+            )
+            error_message:str = 'The key information cannot be loaded. \n\n'
+            error_message += 'To remove the faulty key, run \n'
+            error_message += (
+                '<span '
+                'font-family="monospace" '
+                'background="#333333" '
+                'foreground="white" '
+            )
+            error_message += f' > apt-manage key {self.source.ident} --remove '
+            error_message += '</span> \n'
+            error_dialog = repo.get_error_messagedialog(
+                parent,
+                f'The signing key for {self.source.name} has errors',
+                err,
+                error_message
+            )
+            secondary_label = error_dialog.get_message_area().get_children()[-1]
+            secondary_label.set_line_wrap(False)
+            cancel_button = error_dialog.get_widget_for_response(Gtk.ResponseType.CANCEL)
+            cancel_button.set_label('Continue')
+            error_dialog.add_button(_('Remove Key'), Gtk.ResponseType.OK)
+            delete_button = error_dialog.get_widget_for_response(Gtk.ResponseType.OK)
+            Gtk.StyleContext.add_class(delete_button.get_style_context(), 'destructive-action')
+            
+            response = error_dialog.run()
+            if response == Gtk.ResponseType.OK:
+                try:
+                    file = source.file
+                    out_source = file.get_source_by_ident(source.ident)
+                    old_key = out_source.key
+                    out_source.key = None
+                    out_source.signed_by = ''
+                    multi_key: bool = False
+                    for other_source in repo.sources.values():
+                        if other_source.ident == out_source.ident:
+                            continue
+                        if other_source.key == old_key:
+                            self.log.debug(
+                                'Found key in use with %s', other_source.ident
+                            )
+                            multi_key = True
+                            break
+                    if multi_key:
+                        self.log.info(
+                            'Key file %s in use with another key, not deleting',
+                            old_key.path
+                        )
+                    else:
+                        self.log.warning(
+                            'No other source found using the key %s, deleting',
+                            old_key.path
+                        )
+                        old_key.delete_key()
+                    self.log.debug('Saving new source %s', source)
+                    out_source.save()
+                    self.log.debug('Source saved')
+                except Exception as err:
+                    self.log.error(
+                        'Could not edit mirror %s: %s', source.ident, str(err)
+                    )
+                    err_dialog = repo.get_error_messagedialog(
+                        parent,
+                        f'Could not save source',
+                        err,
+                        f'{source.name} could not be saved'
+                    )
+                    err_dialog.run()
+                    err_dialog.destroy()
+                    supports_keys = False
+            else:
+                supports_keys = False
+
+            error_dialog.destroy()
+        
+        self.log.debug(
+            'Repolib supports keys: %s / Source has key: %s', 
+            supports_keys,
+            has_key
+        )
+        
 
         Gtk.Dialog.__init__(self, _("Modify Source"), parent, 0,
                             (Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
                              Gtk.STOCK_SAVE, Gtk.ResponseType.OK),
                              modal=1, use_header_bar=header)
 
-        self.log = logging.getLogger("repoman.EditDialog")
 
         self.parent = parent
 
         self.props.resizable = False
+        self.props.width_request = 600
 
         content_area = self.get_content_area()
 
-        content_grid = Gtk.Grid()
-        content_grid.set_margin_top(24)
-        content_grid.set_margin_left(24)
-        content_grid.set_margin_right(24)
-        content_grid.set_margin_bottom(24)
-        content_grid.set_column_spacing(12)
-        content_grid.set_row_spacing(12)
-        content_grid.set_halign(Gtk.Align.CENTER)
-        content_area.add(content_grid)
+        self.content_stack = Gtk.Stack()
+        self.content_stack.set_halign(Gtk.Align.START)
+        content_area.add(self.content_stack)
+
+        edit_grid = Gtk.Grid()
+        edit_grid.set_margin_top(24)
+        edit_grid.set_margin_left(24)
+        edit_grid.set_margin_right(24)
+        edit_grid.set_margin_bottom(24)
+        edit_grid.set_column_spacing(12)
+        edit_grid.set_row_spacing(12)
+        edit_grid.set_halign(Gtk.Align.CENTER)
+        self.content_stack.add_titled(edit_grid, 'edit', _('Modify Source'))
+
+        key_grid = Gtk.Grid()
+        key_grid.set_margin_top(24)
+        key_grid.set_margin_left(24)
+        key_grid.set_margin_right(24)
+        key_grid.set_margin_bottom(24)
+        key_grid.set_column_spacing(12)
+        key_grid.set_row_spacing(12)
+        key_grid.set_halign(Gtk.Align.START)
+        self.content_stack.add_titled(key_grid, 'key', _('Signing Key Info'))
+
+        if has_key:
+            self.log.info('Adding Key Info Pane')
+            stackswitcher = Gtk.StackSwitcher()
+            stackswitcher.set_stack(self.content_stack)
+            headerbar = self.get_titlebar()
+            headerbar.set_custom_title(stackswitcher)
+            stackswitcher.show()
+        
+        elif supports_keys:
+            add_key_button = Gtk.Button.new_with_label(_('Add signing key'))
+            edit_grid.attach(add_key_button, 1, 6, 1, 2)
+            add_key_button.connect('clicked', self.on_add_key_clicked)
+        
+        # elif
 
         name_label = Gtk.Label.new(_('Name'))
         name_label.set_halign(Gtk.Align.END)
@@ -354,54 +484,112 @@ class EditDialog(Gtk.Dialog):
         component_label.set_halign(Gtk.Align.END)
         enabled_label = Gtk.Label(_("Enabled"))
         enabled_label.set_halign(Gtk.Align.END)
-        content_grid.attach(name_label, 0, 0, 1, 1)
-        content_grid.attach(type_label, 0, 1, 1, 1)
-        content_grid.attach(uri_label, 0, 2, 1, 1)
-        content_grid.attach(version_label, 0, 3, 1, 1)
-        content_grid.attach(component_label, 0, 4, 1, 1)
-        content_grid.attach(enabled_label, 0, 5, 1, 1)
+        edit_grid.attach(name_label, 0, 0, 1, 1)
+        edit_grid.attach(type_label, 0, 1, 1, 1)
+        edit_grid.attach(uri_label, 0, 2, 1, 1)
+        edit_grid.attach(version_label, 0, 3, 1, 1)
+        edit_grid.attach(component_label, 0, 4, 1, 1)
+        edit_grid.attach(enabled_label, 0, 5, 1, 1)
 
         self.name_entry = Gtk.Entry()
         self.name_entry.set_placeholder_text(_('Name'))
         self.name_entry.set_text(self.source['X-Repolib-Name'])
         self.name_entry.set_activates_default(False)
         self.name_entry.set_width_chars(40)
-        # self.name_entry.connect('changed', self.on_entry_changed, 'X-Repolib-Name')
-        content_grid.attach(self.name_entry, 1, 0, 1, 1)
+        edit_grid.attach(self.name_entry, 1, 0, 1, 1)
 
         self.source_switch = Gtk.Switch()
         self.source_switch.set_halign(Gtk.Align.START)
         self.source_switch.set_active(self.source.sourcecode_enabled)
         self.source_switch.connect('state-set', self.on_source_switch_changed)
-        content_grid.attach(self.source_switch, 1, 1, 1, 1)
+        edit_grid.attach(self.source_switch, 1, 1, 1, 1)
 
         self.uri_entry = Gtk.Entry()
         self.uri_entry.set_placeholder_text("https://ppa.launchpad.net/...")
         self.uri_entry.set_text(self.source['URIs'])
         self.uri_entry.set_activates_default(False)
         self.uri_entry.set_width_chars(40)
-        # self.uri_entry.connect('changed', self.on_entry_changed, 'URIs')
-        content_grid.attach(self.uri_entry, 1, 2, 1, 1)
+        edit_grid.attach(self.uri_entry, 1, 2, 1, 1)
 
         self.version_entry = Gtk.Entry()
         self.version_entry.set_placeholder_text(repo.get_os_codename())
         self.version_entry.set_text(self.source['Suites'])
         self.version_entry.set_activates_default(False)
-        # self.version_entry.connect('changed', self.on_entry_changed, 'Suites')
-        content_grid.attach(self.version_entry, 1, 3, 1, 1)
+        edit_grid.attach(self.version_entry, 1, 3, 1, 1)
 
         self.component_entry = Gtk.Entry()
         self.component_entry.set_placeholder_text("main")
         self.component_entry.set_text(self.source['Components'])
         self.component_entry.set_activates_default(False)
-        # self.component_entry.connect('changed', self.on_entry_changed, 'Components')
-        content_grid.attach(self.component_entry, 1, 4, 1, 1)
+        edit_grid.attach(self.component_entry, 1, 4, 1, 1)
 
         self.enabled_switch = Gtk.Switch()
         self.enabled_switch.set_halign(Gtk.Align.START)
         self.enabled_switch.set_active(self.source.enabled.get_bool())
         self.enabled_switch.connect('state-set', self.on_enabled_switch_changed)
-        content_grid.attach(self.enabled_switch, 1, 5, 1, 1)
+        edit_grid.attach(self.enabled_switch, 1, 5, 1, 1)
+
+        if has_key:
+            self.key = self.source.get_key_info()
+            keyid_label = Gtk.Label.new(_('Key ID:'))
+            keyid_label.set_halign(Gtk.Align.END)
+            keyid_label.set_valign(Gtk.Align.START)
+            fingerprint_label = Gtk.Label.new(_('Fingerprint:'))
+            fingerprint_label.set_halign(Gtk.Align.END)
+            keytype_label = Gtk.Label.new(_('Key Type:'))
+            keytype_label.set_halign(Gtk.Align.END)
+            issuedate_label = Gtk.Label.new(_('Issue Date:'))
+            issuedate_label.set_halign(Gtk.Align.END)
+            keysize_label = Gtk.Label.new(_('Size:'))
+            keysize_label.set_halign(Gtk.Align.END)
+            keypath_label = Gtk.Label.new(_('Keyring Path:'))
+            keypath_label.set_halign(Gtk.Align.END)
+            keypath_label.set_valign(Gtk.Align.START)
+            delete_key_button = Gtk.Button.new_with_label(_('Remove Key'))
+            delete_key_button.connect('clicked', self.on_delete_key_button_clicked)
+            Gtk.StyleContext.add_class(
+                delete_key_button.get_style_context(),
+                'destructive-action'
+            )
+            key_grid.attach(keyid_label,       0, 0, 1, 1)
+            key_grid.attach(fingerprint_label, 0, 1, 1, 1)
+            key_grid.attach(keytype_label,     0, 2, 1, 1)
+            key_grid.attach(issuedate_label,   0, 3, 1, 1)
+            key_grid.attach(keysize_label,     0, 4, 1, 1)
+            key_grid.attach(keypath_label,     0, 5, 1, 1)
+            key_grid.attach(delete_key_button, 1, 6, 1, 1)
+            keyid = Gtk.Label.new(self.key['uids'][0])
+            keyid.set_selectable(True)
+            keyid.set_line_wrap(True)
+            keyid.set_max_width_chars(60)
+            keyid.props.xalign = 0
+            fingerprint = Gtk.Label.new(self.key['keyid'])
+            fingerprint.set_selectable(True)
+            if self.key['type'] == 'pub':
+                keytype = Gtk.Label.new(_('Public'))
+            else:
+                keytype = Gtk.Label.new(_('Private'))
+            keydate = date.fromtimestamp(int(self.key['date']))
+            issuedate = Gtk.Label.new(keydate.ctime())
+            issuedate.set_selectable(True)
+            sizeunit:str = _('Bytes')
+            keysize = Gtk.Label.new(f'{self.key["length"]} {sizeunit}')
+            keysize.set_selectable(True)
+            keypath = Gtk.Label.new(str(self.source.key.path))
+            keypath.set_selectable(True)
+            keypath.set_line_wrap(True)
+            keypath.set_max_width_chars(60)
+            keypath.props.xalign = 0
+            for i in [keyid, fingerprint, keytype, issuedate, keysize, keypath]:
+                i.set_halign(Gtk.Align.START)
+            key_grid.attach(keyid,       1, 0, 1, 1)
+            key_grid.attach(fingerprint, 1, 1, 1, 1)
+            key_grid.attach(keytype,     1, 2, 1, 1)
+            key_grid.attach(issuedate,   1, 3, 1, 1)
+            key_grid.attach(keysize,     1, 4, 1, 1)
+            key_grid.attach(keypath,     1, 5, 1, 1)
+
+
 
         save_button = self.get_widget_for_response(Gtk.ResponseType.OK)
         cancel_button = self.get_widget_for_response(Gtk.ResponseType.CANCEL)
@@ -428,6 +616,54 @@ class EditDialog(Gtk.Dialog):
             action_area.remove(cancel_button)
             action_area.add(cancel_button)
             action_area.add(save_button)
+    
+    def on_add_key_clicked(self, button):
+        """ button::clicked signal handler
+        
+        Open a dialog to add a signing key
+        """
+        dialog = AddKeyDialog(self, self.source)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            try:
+                self.key = repo.get_key(
+                    self.source,
+                    key_type=dialog.key_type_combo.get_active_id(),
+                    key_data=dialog.prime_buffer,
+                    key_options=dialog.secondary_buffer
+                )
+            except Exception as err:
+                self.log.error(
+                    'Could not add key to %s: %s', 
+                    self.source.ident, 
+                    str(err)
+                )
+                error_dialog = repo.get_error_messagedialog(
+                    self.parent,
+                    f'Could not add key to {self.source.name}',
+                    err,
+                    f'{self.source.ident} will not be saved.'
+                )
+                error_dialog.run()
+                error_dialog.destroy()
+                dialog.destroy()
+                self.response(Gtk.ResponseType.CANCEL)
+                return
+            self.key_data = dialog.prime_buffer
+            self.keytype = dialog.key_type_combo.get_active_id()
+            dialog.destroy()
+            if not self.key:
+                raise Exception(f'Could not add the key to source {self.source.ident}!')
+            self.response(Gtk.ResponseType.APPLY)
+        dialog.destroy()
+    
+    def on_delete_key_button_clicked(self, button):
+        delete_dialog = DeleteKeyDialog(self, self.source.ident)
+        response = delete_dialog.run()
+        delete_dialog.destroy()
+        if response == Gtk.ResponseType.OK:
+            self.response(Gtk.ResponseType.REJECT)
+        
 
     def on_entry_changed(self, entry, prop):
         """ entry::changed signal handler
@@ -449,6 +685,245 @@ class EditDialog(Gtk.Dialog):
         """ switch::state-set handler for enabled switch. """
         self.source.enabled = state
 
+class AddKeyDialog(Gtk.Dialog):
+
+    def __init__(self, parent, source) -> None:
+        self.log = logging.getLogger("repoman.EditDialog")
+        self.source = source
+
+        self.sks_keyserver = repo.repolib.key.SKS_KEYSERVER
+
+        super().__init__(
+            _("Add Signing Key"), parent, 0,
+            (
+                Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                Gtk.STOCK_SAVE, Gtk.ResponseType.OK
+            ),
+            modal=1, use_header_bar=header
+        )
+
+        self.parent = parent
+
+        self.props.resizable = False
+        self.props.width_request = 600
+
+        content_area = self.get_content_area()
+
+        content_grid = Gtk.Grid()
+        content_grid.set_margin_top(24)
+        content_grid.set_margin_left(24)
+        content_grid.set_margin_right(24)
+        content_grid.set_margin_bottom(24)
+        content_grid.set_column_spacing(12)
+        content_grid.set_row_spacing(12)
+        content_area.add(content_grid)
+
+        info_label = Gtk.Label.new(_(
+            'Signing keys ensure system security by verifying that downloaded '
+            'software from this source has not been tampered with.'
+        ))
+        info_label.set_justify(Gtk.Justification.CENTER)
+        info_label.set_max_width_chars(60)
+        info_label.set_line_wrap(True)
+        info_label.set_hexpand(True)
+        content_grid.attach(info_label, 0, 0, 2, 1)
+
+        self.key_select_stack = Gtk.Stack()
+        content_grid.attach(self.key_select_stack, 1, 1, 1, 2)
+        self.sub_label = Gtk.Label.new(_('Select a thing'))
+        self.sub_label.set_no_show_all(True)
+        self.sub_label.set_valign(Gtk.Align.START)
+        self.sub_label.set_halign(Gtk.Align.END)
+        self.sub_label.set_vexpand(True)
+        content_grid.attach(self.sub_label, 0, 2, 1, 1)
+
+        self.prime_entry = Gtk.Entry()
+        self.prime_entry.set_no_show_all(False)
+        self.prime_buffer: str = ''
+
+        self.secondary_entry = Gtk.Entry()
+        self.secondary_entry.set_no_show_all(False)
+        self.secondary_buffer: str = ''
+
+        fingerprint_grid = Gtk.Grid()
+        fingerprint_grid.set_row_spacing(5) # Aligns helper text with entry text
+        self.key_select_stack.add_named(fingerprint_grid, 'fingerprint')
+        fingerprint_entry = Gtk.Entry()
+        fingerprint_entry.connect('changed', self.on_prime_entry_changed)
+        fingerprint_entry.set_placeholder_text(_('Fingerprint'))
+        fingerprint_entry.set_hexpand(True)
+        fingerprint_grid.attach(fingerprint_entry, 0, 0, 1, 1)
+        keyserver_entry = Gtk.Entry()
+        keyserver_entry.connect('changed', self.on_secondary_entry_changed)
+        keyserver_entry.set_placeholder_text(self.sks_keyserver)
+        keyserver_entry.set_text(self.sks_keyserver)
+        fingerprint_grid.attach(keyserver_entry, 0, 1, 1, 1)
+
+        url_grid = Gtk.Grid()
+        self.key_select_stack.add_named(url_grid, 'url')
+        url_entry = Gtk.Entry()
+        url_entry.connect('changed', self.on_prime_entry_changed)
+        url_entry.set_hexpand(True)
+        url_entry.set_placeholder_text(_('URL'))
+        url_grid.attach(url_entry, 0, 0, 1, 1)
+
+        path_grid = Gtk.Grid()
+        self.key_select_stack.add_named(path_grid, 'path')
+
+        path_select = Gtk.FileChooserButton(
+            'Signing Key Path',
+            Gtk.FileChooserAction.OPEN
+        )
+        path_select.set_current_folder(str(repo.repolib.KEYS_DIR))
+        path_select.set_hexpand(True)
+        path_select.connect('file-set', self.on_file_set)
+        path_grid.attach(path_select, 0, 0, 1, 1)
+
+        ascii_grid = Gtk.Grid()
+        self.key_select_stack.add_named(ascii_grid, 'ascii')
+        ascii_scrolled = Gtk.ScrolledWindow()
+        ascii_textview = Gtk.TextView()
+        ascii_textview.get_buffer().connect('changed', self.on_prime_entry_changed)
+        ascii_textview.set_hexpand(True)
+        ascii_textview.set_vexpand(True)
+        ascii_textview.set_monospace(True)
+        ascii_grid.attach(ascii_scrolled, 0, 1, 1, 1)
+        ascii_scrolled.add(ascii_textview)
+
+        self.key_type_combo = Gtk.ComboBoxText()
+        self.key_type_combo.set_valign(Gtk.Align.START)
+        self.key_type_combo.append('fingerprint', _('Fingerprint'))
+        self.key_type_combo.append('url', _('URL'))
+        self.key_type_combo.append('path', _('Path'))
+        self.key_type_combo.append('ascii', _('ASCII-Armor'))
+        self.key_type_combo.connect('changed', self.on_key_type_changed)
+        content_grid.attach(self.key_type_combo, 0, 1, 1, 1)
+
+        self.save_button = self.get_widget_for_response(Gtk.ResponseType.OK)
+        Gtk.StyleContext.add_class(self.save_button.get_style_context(),
+                                   "suggested-action")
+        self.save_button.set_sensitive(False)
+
+        self.show_all()
+        self.key_type_combo.set_active_id('fingerprint')
+
+
+    def on_file_set(self, button):
+        self.prime_buffer = button.get_filename()
+        self.log.debug('Prime buffer: %s', self.prime_buffer)
+        self.save_button.set_sensitive(True)
+
+    def on_prime_entry_changed(self, entry):
+        """entry::changed signal handler
+        
+        Puts the contents of the entry into the primary buffer.
+        """
+        try:
+            # widget is an entry
+            self.prime_buffer = entry.get_text()
+        except TypeError:
+            # Widget is a TextBuffer
+            self.prime_buffer = entry.props.text
+        
+        if len(self.prime_buffer) > 0:
+            self.save_button.set_sensitive(True)
+        else:
+            self.save_button.set_sensitive(False)
+        self.log.debug('Prime buffer:')
+        self.log.debug(self.prime_buffer)
+    
+    def on_secondary_entry_changed(self, entry):
+        """entry::changed signal handler
+        
+        Puts the contents of the entry into the secondary buffer.
+        """
+        self.secondary_buffer = entry.get_text()
+        self.log.debug('Secondary buffer:')
+        self.log.debug(self.secondary_buffer)
+    
+    def on_key_type_changed(self, combo):
+        """ComboBox::changed signal handler
+        
+        Need to show/hide and set text for the sub label
+        """
+        self.save_button.set_sensitive(False)
+        self.prime_buffer = ''
+        self.secondary_buffer = ''
+        sub_label_props = {
+           #'combo-id':    (_('Text to set'), visible:bool)
+            'fingerprint': (_('Keyserver'),   True),
+            'url':         (_('none'),        False),
+            'path':        (_('none'),        False),
+            'ascii':       (_('none'),        False)
+        }
+        self.log.debug('Key Type: %s', combo.get_active_id())
+        props_to_set = sub_label_props[combo.get_active_id()]
+        self.sub_label.set_text(props_to_set[0])
+        self.sub_label.set_visible(props_to_set[1])
+        self.key_select_stack.set_visible_child_name(combo.get_active_id())
+
+class DeleteKeyDialog(Gtk.Dialog):
+
+    def __init__(self, parent, name) -> None:
+        super().__init__(
+            'Remove Signing Key',
+            parent,
+            0,
+            ((
+                Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                Gtk.STOCK_DELETE, Gtk.ResponseType.OK
+            )),
+            modal=1,
+            use_header_bar=header
+        )
+        self.set_size_request(350, 250)
+        self.set_resizable(False)
+        self.set_deletable(False)
+        self.set_transient_for(parent)
+
+        content_area = self.get_content_area()
+
+        content_grid = Gtk.Grid()
+        content_grid.set_margin_top(24)
+        content_grid.set_margin_left(24)
+        content_grid.set_margin_right(24)
+        content_grid.set_margin_bottom(24)
+        content_grid.set_column_spacing(36)
+        content_grid.set_row_spacing(12)
+        content_area.add(content_grid)
+
+        main_text:str = _(
+            f'<b>Remove signing key for {name}</b>'
+        )
+        main_label = Gtk.Label()
+        main_label.set_width_chars(55)
+        main_label.set_max_width_chars(55)
+        main_label.set_line_wrap(True)
+        main_label.set_markup(main_text)
+
+        sub_text:str = _(
+            'If you remove the key, there may no longer be any verification of '
+            'software packages from this repository, including for future '
+            'updates. This may cause errors with your updates.\n\n'
+            'If no other sources use this key, it will be deleted from '
+            'this computer.'
+        )
+        sub_label = Gtk.Label.new(sub_text)
+        sub_label.set_width_chars(55)
+        sub_label.set_max_width_chars(55)
+        sub_label.set_line_wrap(True)
+        
+        content_grid.attach(main_label, 0, 0, 1, 1)
+        content_grid.attach(sub_label, 0, 1, 1, 1)
+
+        cancel_button = self.get_widget_for_response(Gtk.ResponseType.OK)
+        Gtk.StyleContext.add_class(
+            cancel_button.get_style_context(),
+            'destructive-action'
+        )
+
+        self.show_all()
+       
 class InfoDialog(Gtk.Dialog):
 
     def __init__(self, parent, name, option):

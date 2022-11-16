@@ -19,6 +19,7 @@
 '''
 
 import logging
+from optparse import Option
 from pathlib import Path
 import subprocess
 import threading
@@ -59,6 +60,61 @@ def _do_edit_system_legacy_sources_list(name):
                 'editor',
                 '/etc/apt/sources.list'
             ])
+
+def _add_fingerprint(key, fingerprint: str, options: str = '') -> bool:
+    if not fingerprint:
+        return False
+    
+    if options:
+        key.load_key_data(fingerprint=fingerprint, keyserver=options)
+    else:
+        key.load_key_data(fingerprint=fingerprint)
+    
+    return True
+
+def _add_ascii(key, ascii:str, options:str = '') -> bool:
+    if not ascii:
+        return False
+    
+    key.load_key_data(ascii=ascii)
+
+    return True
+
+def _add_url(key, url:str, options:str = '') -> bool:
+    if not url:
+        return False
+    
+    key.load_key_data(url=url)
+
+    return True
+
+def _add_path(key, path:str, options:str = '') -> bool:
+    if not path:
+        return False
+    
+    key_path = Path(path)
+    
+    if not key_path.exists():
+        return False
+    
+    return True
+
+def get_key(source, key_type: str = '', key_data:str = '', key_options:str = ''):
+    log.debug('Adding %s key for source %s', key_type, source.ident)
+    """Add a key to the system"""
+
+    key = repolib.SourceKey(name=source.ident)
+    add_funcs = {
+        # 'key_type': add_function,
+        'fingerprint': _add_fingerprint,
+        'url': _add_url,
+        'path': _add_path,
+        'ascii': _add_ascii
+    }
+
+    add_funcs[key_type](key, key_data, options=key_options)
+
+    return key
 
 def edit_system_legacy_sources_list():
     thread = threading.Thread(
@@ -212,7 +268,7 @@ def get_error_messagedialog(parent, text, exc, prefix):
 
     traceback_text = ' '.join(traceback.format_tb(exc.__traceback__))
     secondary_text = GLib.markup_escape_text(str(exc))
-    dialog.format_secondary_markup(f'{prefix}:\n{secondary_text}')
+    dialog.format_secondary_markup(f'{prefix}\n{secondary_text}')
     content_area = dialog.get_content_area()
     
     expander = Gtk.Expander.new('Error details:')
