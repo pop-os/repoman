@@ -264,7 +264,7 @@ class Flatpak(Gtk.Box):
             self.delete_button.set_sensitive(False)
 
     def throw_error_dialog(self, error, msg_type='error'):
-        """ Display an error message ina graphical dialog.
+        """ Display an error message in a graphical dialog.
 
         Arguments:
             message (str): The message to display.
