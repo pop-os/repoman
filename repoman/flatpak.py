@@ -28,6 +28,7 @@ from gi.repository import Gtk, GObject, GLib, Gio, Pango
 
 from .dialog import ErrorDialog, AddDialog, DeleteDialog, InfoDialog
 from . import flatpak_helper as helper
+from . import repo
 
 from gettext import gettext as _ 
 
@@ -262,16 +263,18 @@ class Flatpak(Gtk.Box):
             self.info_button.set_sensitive(False)
             self.delete_button.set_sensitive(False)
 
-    def throw_error_dialog(self, message, msg_type='error'):
+    def throw_error_dialog(self, error, msg_type='error'):
         """ Display an error message ina graphical dialog.
 
         Arguments:
             message (str): The message to display.
             msg_type (str): The style of the message to display.
         """
-        dialog = ErrorDialog(
-            self.parent, 'Couldn\'t add source', 'dialog-error',
-            'Couldn\'t add source', message
+        dialog = repo.get_error_messagedialog(
+            self.parent.parent, 
+            'Couldn\'t add source',
+            error,
+            'Couldn\'t add source'
         )
         dialog.run()
         dialog.destroy()

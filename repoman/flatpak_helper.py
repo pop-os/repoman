@@ -272,17 +272,17 @@ class AddThread(Thread):
         
         except GLib.Error as e:
             log.warning('Could not add flatpakrepo %s (%s)', self.url, e.args)
-            self.throw_error(e.args[0])
+            self.throw_error(e)
             contents = None
         
         GObject.idle_add(self.parent.parent.parent.stack.flatpak.generate_entries)
         GObject.idle_add(self.parent.parent.parent.stack.flatpak.view.set_sensitive, True)
         GObject.idle_add(self.parent.parent.parent.hbar.spinner.stop)
     
-    def throw_error(self, message):
+    def throw_error(self, error):
             GObject.idle_add(
                 self.parent.parent.parent.stack.flatpak.throw_error_dialog,
-                message, 
+                error, 
                 "error"
             )
 
