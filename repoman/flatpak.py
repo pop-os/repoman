@@ -263,7 +263,7 @@ class Flatpak(Gtk.Box):
             self.info_button.set_sensitive(False)
             self.delete_button.set_sensitive(False)
 
-    def throw_error_dialog(self, error, msg_type='error'):
+    def throw_error_dialog(self, error, repo_name='', msg_type='error'):
         """ Display an error message in a graphical dialog.
 
         Arguments:
@@ -272,9 +272,9 @@ class Flatpak(Gtk.Box):
         """
         dialog = repo.get_error_messagedialog(
             self.parent.parent, 
-            'Couldn\'t add source',
+            'Couldn\'t add Flatpak Source',
             error,
-            'Couldn\'t add source'
+            f'Couldn\'t add source {repo_name}'
         )
         dialog.run()
         dialog.destroy()
