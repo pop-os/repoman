@@ -221,6 +221,8 @@ class FlatpakrefFile(configparser.ConfigParser):
     def __init__(self, flatpakref_path = None) -> None:
         super().__init__()
         self.path = flatpakref_path
+        self.window = None
+        self.dialog = None
     
     def __repr__(self) -> str:
         return f'FlatpakrefFile({self.path})'
@@ -233,6 +235,28 @@ class FlatpakrefFile(configparser.ConfigParser):
             return True
         return False
     
+
+    def do_install(self, window, dialog):
+        self.window = window
+        self.dialog = dialog
+        self.dialog.spinner.start()
+        install_thread = FpRefInstallThread(self)
+        self.dialog.set_sensitive(False)
+        self.window.set_sensitive(False)
+        install_thread.start()
+
+    def install_complete(self):
+        self.window.set_sensitive(True)
+        self.dialog.destroy()
+
+    def report_error(self, error):
+        self.dialog.report_error(error)
+        self.window.set_sensitive(True)
+        self.dialog.destroy()
+
+    @property
+    def file(self) -> Gio.File:
+        return self._file
     
     @property
     def path(self) -> Path:
@@ -243,6 +267,7 @@ class FlatpakrefFile(configparser.ConfigParser):
         self._path = path
         if self._path:
             self.read(self._path)
+            self._file = Gio.File.new_for_path(str(self._path))
 
     @property
     def has_remote(self) -> bool:
@@ -322,6 +347,24 @@ class FlatpakrefFile(configparser.ConfigParser):
         except configparser.NoOptionError:
             return ''
 
+class FpRefInstallThread(Thread):
+
+    def __init__(self, file) -> None:
+        super().__init__()
+        self.ref_file = file
+        self.success: bool = False
+    
+    def run(self) -> None:
+        installation = get_installation_for_type('user')
+        transaction = Flatpak.Transaction.new_for_installation(installation, None)
+        with open(self.ref_file.path, 'rb') as ref_file:
+            ref = GLib.Bytes.new(ref_file.read())
+        transaction.add_install_flatpakref(ref)
+        try:
+            transaction.run(None)
+        except Exception as err:
+            GObject.idle_add(self.ref_file.report_error, err)
+        GObject.idle_add(self.ref_file.install_complete)
 
 
 class RemoveThread(Thread):

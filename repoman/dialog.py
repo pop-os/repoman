@@ -1114,13 +1114,15 @@ class InstallDialog(Gtk.Dialog):
             modal=1, 
             use_header_bar=header
         )
+        self.set_size_request(600,350)
+        self.set_resizable(False)
 
         self.flatpak_file = flatpak_helper.FlatpakrefFile()
 
         self.log = logging.getLogger("repoman.InstallDialog")
 
         content_area = self.get_content_area()
-        content_box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 6)
+        content_box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 12)
         content_box.set_margin_top(24)
         content_box.set_margin_left(12)
         content_box.set_margin_right(12)
@@ -1130,7 +1132,7 @@ class InstallDialog(Gtk.Dialog):
         content_area.add(content_box)
 
         install_desc = Gtk.Label.new(_(
-            'Install a locally-downloaded Flatpak file.'
+            'Install a locally-downloaded Flatpak file'
         ))
         install_desc.set_line_wrap(True)
         content_box.add(install_desc)
@@ -1139,15 +1141,15 @@ class InstallDialog(Gtk.Dialog):
         flatpakref_filter.add_mime_type('application/vnd.flatpak.ref')
         flatpakref_filter.set_name(_('Flatpak Application Files'))
 
-        file_button = Gtk.FileChooserButton.new(
+        self.file_button = Gtk.FileChooserButton.new(
             _('Install Flatpak File'),
             Gtk.FileChooserAction.OPEN
         )
-        file_button.set_filter(flatpakref_filter)
-        file_button.set_title(_('Install a Flatpak'))
-        file_button.set_hexpand(True)
-        file_button.connect('file-set', self.set_install_sensitive)
-        content_box.add(file_button)
+        self.file_button.set_filter(flatpakref_filter)
+        self.file_button.set_title(_('Install a Flatpak'))
+        self.file_button.set_hexpand(True)
+        self.file_button.connect('file-set', self.set_install_sensitive)
+        content_box.add(self.file_button)
 
         self.install_button = self.get_widget_for_response(Gtk.ResponseType.OK)
         self.install_button.set_sensitive(False)
@@ -1155,22 +1157,38 @@ class InstallDialog(Gtk.Dialog):
         Gtk.StyleContext.add_class(self.install_button.get_style_context(),
                                    'suggested-action')
 
-        self.remote_check = Gtk.CheckButton.new_with_label(_(
-            'Add a remote for this Flatpak'
-        ))
-        self.remote_check.set_sensitive(False)
-        self.remote_check.set_halign(Gtk.Align.CENTER)
-        content_box.add(self.remote_check)
+        self.remote_label = Gtk.Label.new('')
+        self.remote_label.set_line_wrap(True)
+        content_box.add(self.remote_label)
 
-        remote_check_desc = Gtk.Label.new(_(
+        self.remote_check_desc = Gtk.Label.new(_(
             'Adding a remote for this Flatpak will help ensure that it stays '
-            'up to date'
+            'up to date. Note that updates to this app will not be checked for '
+            'quality or security.'
         ))
-        remote_check_desc.set_line_wrap(True)
-        content_box.add(remote_check_desc)
+        self.remote_check_desc.set_max_width_chars(1)
+        self.remote_check_desc.set_line_wrap(True)
+        content_box.add(self.remote_check_desc)
+        
+        self.spinner = Gtk.Spinner.new()
+        content_box.add(self.spinner)
 
         self.show_all()
+        self.remote_check_desc.hide()
+    
 
+    def report_error(self, error):
+        dialog = repo.get_error_messagedialog(
+            self, 
+            'Couldn\'t install Flatpak',
+            error,
+            f'Couldn\'t install the Flatpak from {self.flatpak_file.path}'
+        )
+        dialog.run()
+        dialog.destroy()
+
+    def set_file_chooser_file(self, path):
+        self.file_button.set_filename(str(path))
 
     def set_install_sensitive(self, filechooserbutton):
         flatpakref_path = None
@@ -1183,8 +1201,8 @@ class InstallDialog(Gtk.Dialog):
 
         if self.flatpak_file.has_remote:
             self.log.debug('Found remote for %s: %s', self.flatpak_file.path, self.flatpak_file.suggestremotename)
-            self.remote_check.set_label(_(
-                f'Add {self.flatpak_file.suggestremotename} remote for this Flatpak'
+            self.remote_label.set_text(_(
+                f'The remote "{self.flatpak_file.suggestremotename}" will be '
+                'added to your system if it isn\'t yet.'
             ))
-            self.remote_check.set_active(flatpakref_path)
-            self.remote_check.set_sensitive(flatpakref_path)
+            self.remote_check_desc.show()
