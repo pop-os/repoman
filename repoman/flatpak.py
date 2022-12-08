@@ -161,7 +161,11 @@ class Flatpak(Gtk.Box):
     
     def show_install_dialog(self, widget):
         dialog = InstallDialog(self.parent.parent)
-        dialog.run()
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            self.log.debug('Installing flatpakref %s', str(dialog.flatpak_file))
+            if dialog.remote_check.get_active():
+                self.log.debug('Adding remote for %s', str(dialog.flatpak_file))
         dialog.destroy()
 
     def set_items_insensitive(self):
