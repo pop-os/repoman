@@ -18,6 +18,7 @@
     along with Repoman.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import configparser
 import gi
 import logging
 from os.path import join
@@ -215,6 +216,114 @@ def validate_flatpakrepo(url):
         return False
 
 # Classes
+class FlatpakrefFile(configparser.ConfigParser):
+    
+    def __init__(self, flatpakref_path = None) -> None:
+        super().__init__()
+        self.path = flatpakref_path
+    
+    def __repr__(self) -> str:
+        return f'FlatpakrefFile({self.path})'
+    
+    def __str__(self) -> str:
+        return str(self.path)
+    
+    def __bool__(self) -> bool:
+        if self.path:
+            return True
+        return False
+    
+    
+    @property
+    def path(self) -> Path:
+        return self._path
+    
+    @path.setter
+    def path(self, path) -> None:
+        self._path = path
+        if self._path:
+            self.read(self._path)
+
+    @property
+    def has_remote(self) -> bool:
+        if self.url and self.runtimerepo and self.suggestremotename:
+            return True
+        return False
+
+    @property
+    def name(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'Name')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+    @property
+    def branch(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'Branch')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+    @property
+    def title(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'Title')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+    @property
+    def isruntime(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'IsRuntime')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+    @property
+    def url(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'Url')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+    @property
+    def suggestremotename(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'SuggestRemoteName')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+    @property
+    def gpgkey(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'GPGKey')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+    @property
+    def runtimerepo(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'RuntimeRepo')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+
+
 class RemoveThread(Thread):
 
     def __init__(self, parent, remote, option):

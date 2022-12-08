@@ -1115,7 +1115,7 @@ class InstallDialog(Gtk.Dialog):
             use_header_bar=header
         )
 
-        self.flatpak_file = None
+        self.flatpak_file = flatpak_helper.FlatpakrefFile()
 
         self.log = logging.getLogger("repoman.InstallDialog")
 
@@ -1156,10 +1156,9 @@ class InstallDialog(Gtk.Dialog):
                                    'suggested-action')
 
         self.remote_check = Gtk.CheckButton.new_with_label(_(
-            'Add remote for this Flatpak'
+            'Add a remote for this Flatpak'
         ))
         self.remote_check.set_sensitive(False)
-        self.remote_check.set_active(True)
         self.remote_check.set_halign(Gtk.Align.CENTER)
         content_box.add(self.remote_check)
 
@@ -1175,8 +1174,17 @@ class InstallDialog(Gtk.Dialog):
 
     def set_install_sensitive(self, filechooserbutton):
         flatpakref_path = None
+        
         if filechooserbutton.get_filename():
             flatpakref_path = Path(filechooserbutton.get_filename())
-        self.flatpak_file = flatpakref_path
+            self.log.debug('Valid Flatpakref found in %s', flatpakref_path)
+        self.flatpak_file.path = flatpakref_path
         self.install_button.set_sensitive(flatpakref_path)
-        self.remote_check.set_sensitive(flatpakref_path)
+
+        if self.flatpak_file.has_remote:
+            self.log.debug('Found remote for %s: %s', self.flatpak_file.path, self.flatpak_file.suggestremotename)
+            self.remote_check.set_label(_(
+                f'Add {self.flatpak_file.suggestremotename} remote for this Flatpak'
+            ))
+            self.remote_check.set_active(flatpakref_path)
+            self.remote_check.set_sensitive(flatpakref_path)
