@@ -21,10 +21,11 @@
 
 import logging
 from datetime import date
+from pathlib import Path
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk  # type: ignore
+from gi.repository import Gtk
  
 from gettext import gettext as _ 
 
@@ -1098,3 +1099,84 @@ class InfoDialog(Gtk.Dialog):
         self.log.debug('Setting disabled to %s', not state)
         self.remote.set_disabled(not state)
         self.installation.modify_remote(self.remote)
+
+class InstallDialog(Gtk.Dialog):
+
+    def __init__(self, parent) -> None:
+        super().__init__(
+            _("Install Flatpak"), 
+            parent, 
+            0,
+            ( # Buttons
+                Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+                Gtk.STOCK_ADD, Gtk.ResponseType.OK
+            ),
+            modal=1, 
+            use_header_bar=header
+        )
+
+        self.flatpak_file = None
+
+        self.log = logging.getLogger("repoman.InstallDialog")
+
+        content_area = self.get_content_area()
+        content_box = Gtk.Box.new(Gtk.Orientation.VERTICAL, 6)
+        content_box.set_margin_top(24)
+        content_box.set_margin_left(12)
+        content_box.set_margin_right(12)
+        content_box.set_margin_bottom(12)
+        content_box.set_halign(Gtk.Align.CENTER)
+        content_box.set_hexpand(True)
+        content_area.add(content_box)
+
+        install_desc = Gtk.Label.new(_(
+            'Install a locally-downloaded Flatpak file.'
+        ))
+        install_desc.set_line_wrap(True)
+        content_box.add(install_desc)
+
+        flatpakref_filter = Gtk.FileFilter()
+        flatpakref_filter.add_mime_type('application/vnd.flatpak.ref')
+        flatpakref_filter.set_name(_('Flatpak Application Files'))
+
+        file_button = Gtk.FileChooserButton.new(
+            _('Install Flatpak File'),
+            Gtk.FileChooserAction.OPEN
+        )
+        file_button.set_filter(flatpakref_filter)
+        file_button.set_title(_('Install a Flatpak'))
+        file_button.set_hexpand(True)
+        file_button.connect('file-set', self.set_install_sensitive)
+        content_box.add(file_button)
+
+        self.install_button = self.get_widget_for_response(Gtk.ResponseType.OK)
+        self.install_button.set_sensitive(False)
+
+        Gtk.StyleContext.add_class(self.install_button.get_style_context(),
+                                   'suggested-action')
+
+        self.remote_check = Gtk.CheckButton.new_with_label(_(
+            'Add remote for this Flatpak'
+        ))
+        self.remote_check.set_sensitive(False)
+        self.remote_check.set_active(True)
+        self.remote_check.set_halign(Gtk.Align.CENTER)
+        content_box.add(self.remote_check)
+
+        remote_check_desc = Gtk.Label.new(_(
+            'Adding a remote for this Flatpak will help ensure that it stays '
+            'up to date'
+        ))
+        remote_check_desc.set_line_wrap(True)
+        content_box.add(remote_check_desc)
+
+        self.show_all()
+
+
+    def set_install_sensitive(self, filechooserbutton):
+        flatpakref_path = None
+        if filechooserbutton.get_filename():
+            flatpakref_path = Path(filechooserbutton.get_filename())
+        self.flatpak_file = flatpakref_path
+        self.install_button.set_sensitive(flatpakref_path)
+        self.remote_check.set_sensitive(flatpakref_path)
