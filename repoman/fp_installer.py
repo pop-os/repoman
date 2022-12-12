@@ -53,10 +53,10 @@ def do_open(app, files, *hint):
     if response == Gtk.ResponseType.OK:
         app.log.debug('Installing flatpakref %s', str(install_dialog.flatpak_file))
         file = install_dialog.flatpak_file
-        file.do_install(install_dialog)
+        file.do_install(install_dialog, app=app)
     else:
         install_dialog.destroy()
-    app.release()
+    # app.release()
 
 def do_activate(app):
     print(f'Activate app {app}')

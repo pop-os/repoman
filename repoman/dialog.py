@@ -25,7 +25,8 @@ from pathlib import Path
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+gi.require_version('Notify', '0.7')
+from gi.repository import Gtk, Notify
  
 from gettext import gettext as _ 
 
@@ -1116,8 +1117,16 @@ class InstallDialog(Gtk.Dialog):
         )
         self.set_size_request(600,350)
         self.set_resizable(False)
+        Notify.init('Flatpak Installer')
 
         self.flatpak_file = flatpak_helper.FlatpakrefFile()
+
+        self.notification = Notify.Notification.new(
+            _('Flatpak Notification'),
+            None,
+            'repoman'
+        )
+        self.notification.clear_actions()
 
         self.log = logging.getLogger("repoman.InstallDialog")
 
@@ -1176,6 +1185,14 @@ class InstallDialog(Gtk.Dialog):
         self.show_all()
         self.remote_check_desc.hide()
     
+
+    def notify_installed(self):
+        self.notification.update(
+            _('Flatpak Installed Successfully'),
+            _(f'The Flatpak package {self.flatpak_file} has been installed'),
+            'repoman'
+        )
+        self.notification.show()
 
     def report_error(self, error):
         dialog = repo.get_error_messagedialog(
