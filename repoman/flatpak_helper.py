@@ -236,22 +236,18 @@ class FlatpakrefFile(configparser.ConfigParser):
         return False
     
 
-    def do_install(self, window, dialog):
-        self.window = window
+    def do_install(self, dialog):
         self.dialog = dialog
         self.dialog.spinner.start()
         install_thread = FpRefInstallThread(self)
         self.dialog.set_sensitive(False)
-        self.window.set_sensitive(False)
         install_thread.start()
 
     def install_complete(self):
-        self.window.set_sensitive(True)
         self.dialog.destroy()
 
     def report_error(self, error):
         self.dialog.report_error(error)
-        self.window.set_sensitive(True)
         self.dialog.destroy()
 
     @property

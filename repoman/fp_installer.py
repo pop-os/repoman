@@ -19,6 +19,8 @@
 
     This is the Application for installing local flatpaks.
 '''
+
+import logging
 import sys
 from pathlib import Path
 
@@ -34,6 +36,7 @@ except ImportError:
 from .dialog import InstallDialog
 
 def do_open(app, files, *hint):
+    app.log = logging.getLogger('repoman.flatpak-install.app')
     print(f'app: {app}')
     print(f'files: {files}')
     print(f'hint: {hint}')
@@ -42,11 +45,18 @@ def do_open(app, files, *hint):
     install_dialog.file_button.set_filename(files[0].get_path())
     install_dialog.set_install_sensitive(install_dialog.file_button)
     install_dialog.file_button.set_sensitive(False)
-    install_dialog.run()
-    install_dialog.destroy()
+    response = install_dialog.run()
+
+    if response == Gtk.ResponseType.OK:
+        app.log.debug('Installing flatpakref %s', str(install_dialog.flatpak_file))
+        file = install_dialog.flatpak_file
+        file.do_install(None, install_dialog)
+    else:
+        install_dialog.destroy()
 
 def do_activate(app):
     print(f'Activate app {app}')
+    app.log = logging.getLogger('repoman.flatpak-install.app')
 
 fp_installer = Gtk.Application(
     application_id='com.system76.Repoman.FlatpakInstaller',
