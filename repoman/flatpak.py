@@ -166,8 +166,8 @@ class Flatpak(Gtk.Box):
             self.log.debug('Installing flatpakref %s', str(dialog.flatpak_file))
             file = dialog.flatpak_file
             file.do_install(dialog)
-        else:
-            dialog.destroy()
+        # else:
+        dialog.destroy()
 
     def set_items_insensitive(self):
         """ Sets all of the buttons in the list to be insensitive/disabled."""

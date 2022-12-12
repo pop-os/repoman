@@ -29,7 +29,7 @@ except ImportError:
     JournalHandler = False
 
 formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-log = logging.getLogger("repoman.flatpak_installer")
+log = logging.getLogger("repoman")
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
 if len(sys.argv) > 2:

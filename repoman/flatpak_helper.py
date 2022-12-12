@@ -220,6 +220,7 @@ class FlatpakrefFile(configparser.ConfigParser):
     
     def __init__(self, flatpakref_path = None) -> None:
         super().__init__()
+        self.log = logging.getLogger('repoman.FlatPakRefFile')
         self.path = flatpakref_path
         self.window = None
         self.dialog = None
@@ -237,18 +238,22 @@ class FlatpakrefFile(configparser.ConfigParser):
     
 
     def do_install(self, dialog):
+        self.log.debug('Installing flatpakref %s', self.path)
         self.dialog = dialog
         self.dialog.spinner.start()
         install_thread = FpRefInstallThread(self)
         self.dialog.set_sensitive(False)
+        self.log.debug('Starting installation in a separate thread')
         install_thread.start()
 
     def install_complete(self):
-        self.dialog.destroy()
+        self.log.debug('Installation complete')
+        # self.dialog.destroy()
 
     def report_error(self, error):
+        self.log.warning('Installation failure: %s', error)
         self.dialog.report_error(error)
-        self.dialog.destroy()
+        # self.dialog.destroy()
 
     @property
     def file(self) -> Gio.File:
@@ -347,20 +352,26 @@ class FpRefInstallThread(Thread):
 
     def __init__(self, file) -> None:
         super().__init__()
+        self.log = logging.getLogger('repoman.FpRefInstallThread')
         self.ref_file = file
         self.success: bool = False
     
     def run(self) -> None:
+        self.log.debug('Installation started')
         installation = get_installation_for_type('user')
+        self.log.debug('Installation found: %s', installation)
         transaction = Flatpak.Transaction.new_for_installation(installation, None)
         with open(self.ref_file.path, 'rb') as ref_file:
             ref = GLib.Bytes.new(ref_file.read())
         transaction.add_install_flatpakref(ref)
         try:
+            self.log.debug('Running transaction %s', transaction)
             transaction.run(None)
+            GObject.idle_add(self.ref_file.install_complete)
         except Exception as err:
+            self.log.error('FAIL: %s', err)
             GObject.idle_add(self.ref_file.report_error, err)
-        GObject.idle_add(self.ref_file.install_complete)
+            return
 
 
 class RemoveThread(Thread):

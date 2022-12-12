@@ -45,14 +45,18 @@ def do_open(app, files, *hint):
     install_dialog.file_button.set_filename(files[0].get_path())
     install_dialog.set_install_sensitive(install_dialog.file_button)
     install_dialog.file_button.set_sensitive(False)
+    
+    app.hold() # Prevent the app from closing on failure so we can show errors
+
     response = install_dialog.run()
 
     if response == Gtk.ResponseType.OK:
         app.log.debug('Installing flatpakref %s', str(install_dialog.flatpak_file))
         file = install_dialog.flatpak_file
         file.do_install(install_dialog)
-    else:
-        install_dialog.destroy()
+    # else:
+    install_dialog.destroy()
+    app.release()
 
 def do_activate(app):
     print(f'Activate app {app}')
