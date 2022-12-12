@@ -54,8 +54,8 @@ def do_open(app, files, *hint):
         app.log.debug('Installing flatpakref %s', str(install_dialog.flatpak_file))
         file = install_dialog.flatpak_file
         file.do_install(install_dialog)
-    # else:
-    install_dialog.destroy()
+    else:
+        install_dialog.destroy()
     app.release()
 
 def do_activate(app):

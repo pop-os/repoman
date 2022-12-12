@@ -237,23 +237,30 @@ class FlatpakrefFile(configparser.ConfigParser):
         return False
     
 
-    def do_install(self, dialog):
+    def do_install(self, dialog, window=None):
         self.log.debug('Installing flatpakref %s', self.path)
         self.dialog = dialog
+        self.window = window
         self.dialog.spinner.start()
         install_thread = FpRefInstallThread(self)
+        if self.window:
+            self.window.set_sensitive(False)
         self.dialog.set_sensitive(False)
         self.log.debug('Starting installation in a separate thread')
         install_thread.start()
 
     def install_complete(self):
         self.log.debug('Installation complete')
-        # self.dialog.destroy()
+        if self.window:
+            self.window.set_sensitive(True)
+        self.dialog.destroy()
 
     def report_error(self, error):
         self.log.warning('Installation failure: %s', error)
+        if self.window:
+            self.window.set_sensitive(True)
         self.dialog.report_error(error)
-        # self.dialog.destroy()
+        self.dialog.destroy()
 
     @property
     def file(self) -> Gio.File:
