@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Flatpak Installer
+GenericName=Flatpak Installer
+Comment=Easily install Flatpaks
+Categories=System;
+Exec=flatpak-installer %s
+Icon=repoman
+MimeType=application/vnd.flatpak.ref;application/vnd.flatpak;
+Terminal=false
+Type=Application
+X-GNOME-Gettext-Domain=repoman
+Keywords=Python;
+NoDisplay=true

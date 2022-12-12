@@ -28,9 +28,9 @@ setup(
     packages=['repoman'],
     data_files = [
         ('/usr/share/metainfo', ['data/repoman.appdata.xml']),
-        ('/usr/share/applications', ['data/repoman.desktop']),
+        ('/usr/share/applications', ['data/repoman.desktop', 'data/flatpak-installer.desktop']),
         ('/usr/share/repoman', ['data/style.css']),
         ('/usr/lib/repoman', ['data/repoman.pkexec'])
     ] + polist(),
-    scripts = ['repoman/repoman'],
+    scripts = ['repoman/repoman', 'repoman/flatpak-installer'],
 )
