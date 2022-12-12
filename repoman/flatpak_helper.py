@@ -242,7 +242,6 @@ class FlatpakrefFile(configparser.ConfigParser):
         self.dialog = dialog
         self.window = window
         self.app = app
-        print(self.app)
         self.dialog.spinner.start()
         install_thread = FpRefInstallThread(self)
         if self.window:
@@ -252,17 +251,14 @@ class FlatpakrefFile(configparser.ConfigParser):
         install_thread.start()
 
     def install_complete(self):
-        self.log.debug('step2')
         self.dialog.notify_installed()
         self.log.debug('Installation complete')
         if self.window:
             self.window.set_sensitive(True)
         self.dialog.destroy()
         if self.app:
-            self.log.debug('step5')
             self.app.release()
             self.app.quit()
-            self.log.debug('step6')
 
         # self.dialog.destroy()
 
@@ -385,9 +381,7 @@ class FpRefInstallThread(Thread):
         try:
             self.log.debug('Running transaction %s', transaction)
             transaction.run(None)
-            self.log.debug('step1')
             GObject.idle_add(self.ref_file.install_complete)
-            self.log.debug('step4')
         except Exception as err:
             self.log.error('FAIL: %s', err)
             GObject.idle_add(self.ref_file.report_error, err)

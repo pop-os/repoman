@@ -95,5 +95,5 @@ try:
     sys.argv.remove('debug') # Remove "debug" item from args
 except ValueError:
     pass # or skip if it's not present.
-print(sys.argv)
+
 fp_installer.run(sys.argv)
