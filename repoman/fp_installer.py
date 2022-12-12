@@ -37,9 +37,9 @@ from .dialog import InstallDialog
 
 def do_open(app, files, *hint):
     app.log = logging.getLogger('repoman.flatpak-install.app')
-    print(f'app: {app}')
-    print(f'files: {files}')
-    print(f'hint: {hint}')
+    app.log.debug(f'app: {app}')
+    app.log.debug(f'files: {files}')
+    app.log.debug(f'hint: {hint}')
 
     install_dialog = InstallDialog(None)
     install_dialog.file_button.set_filename(files[0].get_path())
@@ -56,7 +56,6 @@ def do_open(app, files, *hint):
 
 def do_activate(app):
     print(f'Activate app {app}')
-    app.log = logging.getLogger('repoman.flatpak-install.app')
 
 fp_installer = Gtk.Application(
     application_id='com.system76.Repoman.FlatpakInstaller',

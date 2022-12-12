@@ -32,7 +32,7 @@ formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message
 log = logging.getLogger("repoman.flatpak_installer")
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
-if len(sys.argv) > 1:
+if len(sys.argv) > 2:
     handler.setLevel(logging.DEBUG)
 else:
     handler.setLevel(logging.WARNING)
