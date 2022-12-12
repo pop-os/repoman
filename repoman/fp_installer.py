@@ -41,6 +41,28 @@ def do_open(app, files, *hint):
     app.log.debug(f'files: {files}')
     app.log.debug(f'hint: {hint}')
 
+    if len(files) < 1:
+        app.log.error('You must provide one flatpakref file to install')
+        sys.exit(1)
+
+    file = files[0]
+    
+    # Check file type before processing
+    try:
+        file_info = file.query_info(
+            Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE,
+            Gio.FileQueryInfoFlags.NONE
+        )
+        mimetype = file_info.get_attribute_as_string(
+            Gio.FILE_ATTRIBUTE_STANDARD_CONTENT_TYPE
+        )
+        if mimetype != 'application/vnd.flatpak.ref':
+            app.log.error('This does not appear to be a valid flatpakref file')
+            sys.exit(1)
+    except Exception as err:
+        app.log.error('Could not query the file information: %s', err)
+        sys.exit(1)
+
     install_dialog = InstallDialog(None)
     install_dialog.file_button.set_filename(files[0].get_path())
     install_dialog.set_install_sensitive(install_dialog.file_button)
@@ -56,11 +78,12 @@ def do_open(app, files, *hint):
         file.do_install(install_dialog, app=app)
     else:
         install_dialog.destroy()
-    # app.release()
+        app.release()
 
 def do_activate(app):
-    print(f'Activate app {app}')
+    print('ERROR: You must provide one flatpakref file to install')
 
+# main()
 fp_installer = Gtk.Application(
     application_id='com.system76.Repoman.FlatpakInstaller',
     flags=Gio.ApplicationFlags.HANDLES_OPEN
@@ -68,4 +91,9 @@ fp_installer = Gtk.Application(
 fp_installer.set_inactivity_timeout(10000)
 fp_installer.connect('open', do_open)
 fp_installer.connect('activate', do_activate)
+try:
+    sys.argv.remove('debug') # Remove "debug" item from args
+except ValueError:
+    pass # or skip if it's not present.
+print(sys.argv)
 fp_installer.run(sys.argv)
