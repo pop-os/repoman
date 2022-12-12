@@ -79,6 +79,7 @@ def do_open(app, files, *hint):
     else:
         install_dialog.destroy()
         app.release()
+        app.quit()
 
 def do_activate(app):
     print('ERROR: You must provide one flatpakref file to install')

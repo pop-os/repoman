@@ -266,6 +266,9 @@ class FlatpakrefFile(configparser.ConfigParser):
         self.log.warning('Installation failure: %s', error)
         if self.window:
             self.window.set_sensitive(True)
+        if self.app:
+            self.app.release()
+            self.app.quit()
         self.dialog.report_error(error)
         self.dialog.destroy()
 
