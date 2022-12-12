@@ -51,7 +51,7 @@ def do_open(app, files, *hint):
     response = install_dialog.run()
 
     if response == Gtk.ResponseType.OK:
-        app.log.debug('Installing flatpakref %s', str(install_dialog.flatpak_file))
+        app.log.debug('Installing flatpakref %s', str(install_dialog.flatpak_file.name))
         file = install_dialog.flatpak_file
         file.do_install(install_dialog, app=app)
     else:

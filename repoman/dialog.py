@@ -1189,7 +1189,7 @@ class InstallDialog(Gtk.Dialog):
     def notify_installed(self):
         self.notification.update(
             _('Flatpak Installed Successfully'),
-            _(f'The Flatpak package {self.flatpak_file} has been installed'),
+            _(f'The Flatpak package {self.flatpak_file.name} has been installed'),
             'repoman'
         )
         self.notification.show()
