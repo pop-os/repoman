@@ -165,7 +165,7 @@ class Flatpak(Gtk.Box):
         if response == Gtk.ResponseType.OK:
             self.log.debug('Installing flatpakref %s', str(dialog.flatpak_file))
             file = dialog.flatpak_file
-            file.do_install(self.parent.parent, dialog)
+            file.do_install(dialog)
         else:
             dialog.destroy()
 
