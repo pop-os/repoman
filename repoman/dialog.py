@@ -1163,7 +1163,6 @@ class InstallDialog(Gtk.Dialog):
         self.install_button = self.get_widget_for_response(Gtk.ResponseType.OK)
         self.install_button.set_sensitive(False)
         self.install_button.set_label(_('Install'))
-
         Gtk.StyleContext.add_class(self.install_button.get_style_context(),
                                    'suggested-action')
 
@@ -1221,6 +1220,6 @@ class InstallDialog(Gtk.Dialog):
             self.log.debug('Found remote for %s: %s', self.flatpak_file.path, self.flatpak_file.suggestremotename)
             self.remote_label.set_text(_(
                 f'The remote "{self.flatpak_file.suggestremotename}" will be '
-                'added to your system if it isn\'t yet.'
+                'added to your system if it isn\'t added yet.'
             ))
             self.remote_check_desc.show()
