@@ -28,7 +28,10 @@ try:
 except ImportError:
     JournalHandler = False
 
-formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+if len(sys.argv) > 2:
+    formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+else:
+    formatter = logging.Formatter('flatpak-installer: %(levelname)-8s %(message)s')
 log = logging.getLogger("repoman")
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
