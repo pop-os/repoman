@@ -18,6 +18,7 @@
     along with Repoman.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import configparser
 import gi
 import logging
 from os.path import join
@@ -215,6 +216,180 @@ def validate_flatpakrepo(url):
         return False
 
 # Classes
+class FlatpakrefFile(configparser.ConfigParser):
+    
+    def __init__(self, flatpakref_path = None) -> None:
+        super().__init__()
+        self.log = logging.getLogger('repoman.FlatPakRefFile')
+        self.path = flatpakref_path
+        self.window = None
+        self.dialog = None
+    
+    def __repr__(self) -> str:
+        return f'FlatpakrefFile({self.path})'
+    
+    def __str__(self) -> str:
+        return str(self.path)
+    
+    def __bool__(self) -> bool:
+        if self.path:
+            return True
+        return False
+    
+
+    def do_install(self, dialog, window=None, app=None):
+        self.log.debug('Installing flatpakref %s', self.path)
+        self.dialog = dialog
+        self.window = window
+        self.app = app
+        self.dialog.spinner.start()
+        install_thread = FpRefInstallThread(self)
+        if self.window:
+            self.window.set_sensitive(False)
+        self.dialog.set_sensitive(False)
+        self.log.debug('Starting installation in a separate thread')
+        install_thread.start()
+
+    def install_complete(self):
+        self.dialog.notify_installed()
+        self.log.debug('Installation complete')
+        if self.window:
+            self.window.set_sensitive(True)
+        self.dialog.destroy()
+        if self.app:
+            self.app.release()
+            self.app.quit()
+
+        # self.dialog.destroy()
+
+    def report_error(self, error):
+        self.log.warning('Installation failure: %s', error)
+        if self.window:
+            self.window.set_sensitive(True)
+        if self.app:
+            self.app.release()
+            self.app.quit()
+        self.dialog.report_error(error)
+        self.dialog.destroy()
+
+    @property
+    def file(self) -> Gio.File:
+        return self._file
+    
+    @property
+    def path(self) -> Path:
+        return self._path
+    
+    @path.setter
+    def path(self, path) -> None:
+        self._path = path
+        if self._path:
+            self.read(self._path)
+            self._file = Gio.File.new_for_path(str(self._path))
+
+    @property
+    def has_remote(self) -> bool:
+        if self.url and self.runtimerepo and self.suggestremotename:
+            return True
+        return False
+
+    @property
+    def name(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'Name')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+    @property
+    def branch(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'Branch')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+    @property
+    def title(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'Title')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+    @property
+    def isruntime(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'IsRuntime')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+    @property
+    def url(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'Url')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+    @property
+    def suggestremotename(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'SuggestRemoteName')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+    @property
+    def gpgkey(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'GPGKey')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+    @property
+    def runtimerepo(self) -> str:
+        try:
+            return self.get('Flatpak Ref', 'RuntimeRepo')
+        except configparser.NoSectionError:
+            return ''
+        except configparser.NoOptionError:
+            return ''
+
+class FpRefInstallThread(Thread):
+
+    def __init__(self, file) -> None:
+        super().__init__()
+        self.log = logging.getLogger('repoman.FpRefInstallThread')
+        self.ref_file = file
+        self.success: bool = False
+    
+    def run(self) -> None:
+        self.log.debug('Installation started')
+        installation = get_installation_for_type('user')
+        self.log.debug('Installation found: %s', installation)
+        transaction = Flatpak.Transaction.new_for_installation(installation, None)
+        with open(self.ref_file.path, 'rb') as ref_file:
+            ref = GLib.Bytes.new(ref_file.read())
+        transaction.add_install_flatpakref(ref)
+        try:
+            self.log.debug('Running transaction %s', transaction)
+            transaction.run(None)
+            GObject.idle_add(self.ref_file.install_complete)
+        except Exception as err:
+            self.log.error('FAIL: %s', err)
+            GObject.idle_add(self.ref_file.report_error, err)
+
+
 class RemoveThread(Thread):
 
     def __init__(self, parent, remote, option):

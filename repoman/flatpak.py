@@ -26,7 +26,7 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('Pango', '1.0')
 from gi.repository import Gtk, GObject, GLib, Gio, Pango
 
-from .dialog import ErrorDialog, AddDialog, DeleteDialog, InfoDialog
+from .dialog import ErrorDialog, AddDialog, DeleteDialog, InfoDialog, InstallDialog
 from . import flatpak_helper as helper
 from . import repo
 
@@ -68,7 +68,10 @@ class Flatpak(Gtk.Box):
         Gtk.StyleContext.add_class(sources_title.get_style_context(), "h2")
         self.content_grid.attach(sources_title, 0, 0, 1, 1)
 
-        sources_label = Gtk.Label(_("These sources are for software provided via Flatpak. They may present a security risk. Only add sources that you trust."))
+        sources_label = Gtk.Label(_(
+            "These sources are for software provided via Flatpak. They may "
+            "present a security risk. Only add sources that you trust."
+        ))
         sources_label.set_line_wrap(True)
         sources_label.set_justify(Gtk.Justification.FILL)
         sources_label.set_halign(Gtk.Align.START)
@@ -118,6 +121,14 @@ class Flatpak(Gtk.Box):
         self.add_button.set_tooltip_text(_("Add New Source"))
         self.add_button.connect("clicked", self.on_add_button_clicked)
 
+        # install button
+        self.install_button = Gtk.ToolButton()
+        self.install_button.set_sensitive(True)
+        self.install_button.set_icon_name('system-software-install-symbolic')
+        Gtk.StyleContext.add_class(self.install_button.get_style_context(),
+                                   "image-button")
+        self.install_button.connect('clicked', self.show_install_dialog)
+
         # info button
         self.info_button = Gtk.ToolButton()
         self.info_button.set_sensitive(False)
@@ -141,11 +152,22 @@ class Flatpak(Gtk.Box):
         Gtk.StyleContext.add_class(action_bar.get_style_context(),
                                    "inline-toolbar")
         action_bar.insert(self.delete_button, 0)
+        action_bar.insert(self.install_button, 0)
         action_bar.insert(self.info_button, 0)
         action_bar.insert(self.add_button, 0)
         list_grid.attach(action_bar, 0, 1, 1, 1)
 
         self.generate_entries()
+    
+    def show_install_dialog(self, widget):
+        dialog = InstallDialog(self.parent.parent)
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            self.log.debug('Installing flatpakref %s', str(dialog.flatpak_file))
+            file = dialog.flatpak_file
+            file.do_install(dialog, window=self.parent.parent)
+        else:
+            dialog.destroy()
 
     def set_items_insensitive(self):
         """ Sets all of the buttons in the list to be insensitive/disabled."""
