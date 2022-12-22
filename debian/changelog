@@ -1,9 +1,9 @@
-repoman (2.4.0) UNRELEASED; urgency=medium
+repoman (2.4.0) jammy; urgency=medium
 
   * Add installation of local flatpak packages.
   * Add flatpak-installer command and app for installing flatpaks form file manager
 
- -- Ian Santopietro <ian@system76.com>  Thu, 15 Dec 2022 16:52:02 -0700
+ -- Ian Santopietro <ian@system76.com>  Thu, 22 Dec 2022 09:59:37 -0700
 
 repoman (2.3.0) jammy; urgency=medium
 
