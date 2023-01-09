@@ -7,6 +7,7 @@ Build-Depends: debhelper (>= 10),
                python3-all,
                gir1.2-gtk-3.0,
                libflatpak-dev,
+               gir1.2-flatpak-1.0
 Standards-Version: 3.9.3
 X-Python3-Version: >= 3.4
 
@@ -15,6 +16,7 @@ Architecture: all
 Depends: ${python3:Depends}, ${misc:Depends},
          gir1.2-gtk-3.0,
          python3-repolib (>= 2.0)
+Recommends: gir1.2-flatpak-1.0
 Description: Repoman
  Hey man, let's go do crimes. Yeah, let's install software and not pay.
 
