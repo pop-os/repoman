@@ -138,6 +138,7 @@ class AddDialog(Gtk.Dialog):
 
         Gtk.StyleContext.add_class(self.add_button.get_style_context(),
                                    "suggested-action")
+        self.add_button.set_can_default(True)
         self.add_button.grab_default()
 
         self.show_all()
@@ -1162,6 +1163,7 @@ class InstallDialog(Gtk.Dialog):
 
         self.install_button = self.get_widget_for_response(Gtk.ResponseType.OK)
         self.install_button.set_sensitive(False)
+        self.install_button.set_can_default(True)
         self.install_button.grab_default()
         self.install_button.set_label(_('Install'))
         Gtk.StyleContext.add_class(self.install_button.get_style_context(),

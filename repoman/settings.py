@@ -157,7 +157,6 @@ class Settings(Gtk.Box):
         self.create_switches()
         if self.system_repo:
             self.on_config_changed(None, None, None, None)
-            developer_options.grab_default()
             developer_options.grab_focus()
         else:
             self.switches_sensitive = False
