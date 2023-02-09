@@ -77,6 +77,23 @@ class Updates(Gtk.Box):
         updates_grid.attach(self.checks_grid, 0, 2, 1, 1)
         self.checks_grid.show()
 
+        automatic_title = Gtk.Label.new(_('Automatic Updates'))
+        automatic_title.set_margin_top(12)
+        automatic_title.set_halign(Gtk.Align.START)
+        Gtk.StyleContext.add_class(automatic_title.get_style_context(), 'h2')
+        updates_grid.attach(automatic_title, 0, 3, 1, 1)
+
+        automatic_label = Gtk.Label.new(_('Enable or configure automatic updates in system settings'))
+        automatic_label.set_line_wrap(True)
+        automatic_label.set_justify(Gtk.Justification.FILL)
+        automatic_label.set_halign(Gtk.Align.START)
+        Gtk.StyleContext.add_class(automatic_label.get_style_context(), "description")
+        updates_grid.attach(automatic_label, 0, 4, 1, 1)
+
+        automatic_button = Gtk.Button.new_with_label(_('Open System Settings'))
+        automatic_button.connect('clicked', self.open_system_settings)
+        updates_grid.attach(automatic_button, 0, 5, 1, 1)
+
         self.create_switches()
         self.set_suites_enabled(self.parent.setting.checks_enabled)
         if self.system_repo:
@@ -93,6 +110,15 @@ class Updates(Gtk.Box):
         for widget in self.handlers:
             if widget.handler_is_connected(self.handlers[widget]):
                 widget.handler_block(self.handlers[widget])
+    
+    def open_system_settings(self, button):
+        """ Handler for automatic updates button to open system settings"""
+        settings_appinfo = Gio.AppInfo.create_from_commandline(
+            'gnome-control-center upgrade',
+            'Settings',
+             Gio.AppInfoCreateFlags.NONE
+        )
+        settings_appinfo.launch(None, None)
 
     def unblock_handlers(self):
         for widget in self.handlers:
