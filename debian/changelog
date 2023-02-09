@@ -1,3 +1,9 @@
+repoman (2.5.0) jammy; urgency=medium
+
+  * Adds button link to System Settings for managing automatic updates
+
+ -- Ian Santopietro <ian@system76.com>  Thu, 09 Feb 2023 15:37:11 -0700
+
 repoman (2.4.0) jammy; urgency=medium
 
   * Add installation of local flatpak packages.
