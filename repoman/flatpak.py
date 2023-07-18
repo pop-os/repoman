@@ -127,6 +127,7 @@ class Flatpak(Gtk.Box):
         self.install_button.set_icon_name('system-software-install-symbolic')
         Gtk.StyleContext.add_class(self.install_button.get_style_context(),
                                    "image-button")
+        self.install_button.set_tooltip_text(_("Install a local Flatpak file"))
         self.install_button.connect('clicked', self.show_install_dialog)
 
         # info button
