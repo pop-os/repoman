@@ -17,6 +17,11 @@ Depends: ${python3:Depends}, ${misc:Depends},
          gir1.2-gtk-3.0,
          python3-repolib (>= 2.0)
 Recommends: gir1.2-flatpak-1.0
-Description: Repoman
- Hey man, let's go do crimes. Yeah, let's install software and not pay.
+Description: Repoman, A Software Sources Manager
+ "Hey man, let's go do crimes. Yeah, let's install software and not pay."
+ .
+ Repoman is a software sources manager for Debian-based linux distributions.
+ It allows you to configure system repository information and other system
+ settings, as well as add, remove, and modify third-party repositories on
+ the system. Repoman can also configure Flatpak sources.
 
