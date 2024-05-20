@@ -9,4 +9,3 @@ Terminal=false
 Type=Application
 X-GNOME-Gettext-Domain=repoman
 Keywords=Python;
-NoDisplay=true
