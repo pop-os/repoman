@@ -70,13 +70,15 @@ class List(Gtk.Box):
         Gtk.StyleContext.add_class(list_window.get_style_context(), "list_window")
         list_grid.attach(list_window, 0, 0, 1, 1)
 
-        self.ppa_liststore = Gtk.ListStore(str, str, str)
+        self.ppa_liststore = Gtk.ListStore(str, str, str, str)
         self.view = Gtk.TreeView(self.ppa_liststore)
         renderer = Gtk.CellRendererText()
         name_column = Gtk.TreeViewColumn(_("Source"), renderer, markup=0)
         self.view.append_column(name_column)
         uri_column = Gtk.TreeViewColumn(_('URI'), renderer, markup=1)
         self.view.append_column(uri_column)
+        version_column = Gtk.TreeViewColumn(_('Version'), renderer, markup=3)
+        self.view.append_column(version_column)
         self.view.set_hexpand(True)
         self.view.set_vexpand(True)
         self.tree_selection = self.view.get_selection()
@@ -350,9 +352,15 @@ class List(Gtk.Box):
                     self.log.debug('Source: %s, URIs: %s', source.name, source.uris[0])
                     self.ppa_liststore.insert_with_valuesv(
                         -1,
-                        [0, 1, 2],
-                        [f'<b>{source.name}</b>', source.uris[0], source.ident]
+                        [0, 1, 2, 3],
+                        [
+                            f'<b>{source.name}</b>',
+                            source.uris[0],
+                            source.ident,
+                            ", ".join(source.suites),
+                        ],
                     )
+
             except AttributeError:
                 # Skip any weirdly malformed sources
                 pass
@@ -363,8 +371,13 @@ class List(Gtk.Box):
                 if not source.enabled.get_bool(): 
                     self.ppa_liststore.insert_with_valuesv(
                         -1,
-                        [0, 1, 2],
-                        [source.name, source.uris[0], source.ident]
+                        [0, 1, 2, 3],
+                        [
+                            f'<b>{source.name}</b>',
+                            source.uris[0],
+                            source.ident,
+                            ", ".join(source.suites),
+                        ],
                     )
             except AttributeError:
                 pass
