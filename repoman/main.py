@@ -19,6 +19,7 @@
     along with Repoman.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import sys
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
@@ -28,6 +29,9 @@ try:
 except ImportError:
     JournalHandler = False
 
+if not Gtk.Settings.get_default():
+    print("Error: no DISPLAY or WAYLAND_DISPLAY environment variable specified")
+    sys.exit(1)
 from .window import Window
 
 class Application(Gtk.Application):
